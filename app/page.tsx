@@ -1,5 +1,15 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
+
+type Post = {
+  id: number;
+  title: string;
+  category: string;
+  description: string;
+  yes_votes: number;
+  no_votes: number;
+};
 
 type Comment = {
   id: number;
@@ -18,31 +28,31 @@ type AISummary = {
   summary: string;
 };
 
-const TOPICS = [
-  { id: 1, category: "⚽ Foci", title: "Barcelona vs Real Madrid", subtitle: "UEFA BL Negyeddöntő · Élő · 67'", badge: "🔴 Élő", badgeColor: "#dc2626" },
-  { id: 2, category: "⚽ Foci", title: "Arsenal vs Man City", subtitle: "Premier League · Ma 21:00", badge: "📅 Ma", badgeColor: "#2563eb" },
-  { id: 3, category: "🏠 Lakhatás", title: "Albérletárak Budapesten", subtitle: "Megfizethető-e még a főváros?", badge: "🔥 Trending", badgeColor: "#ea580c" },
-  { id: 4, category: "🗳️ Politika", title: "Önkormányzati választások", subtitle: "Ki a legjobb jelölt?", badge: "💬 Vita", badgeColor: "#7c3aed" },
-];
-
 export default function Home() {
-  const [selectedTopic, setSelectedTopic] = useState<number | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [selectedTopic, setSelectedTopic] = useState<Post | null>(null);
   const [activeCategory, setActiveCategory] = useState("Mind");
   const [votes, setVotes] = useState({ home: 348, draw: 97, away: 98 });
   const [userVote, setUserVote] = useState("");
-  const [comments, setComments] = useState<Comment[]>([
-    { id: 1, user: "BudapestUser", tip: "home", text: "Pedri ma fantasztikusan játszik! Barca simán megnyeri.", likes: 24, dislikes: 3, liked: false, disliked: false },
-    { id: 2, user: "RealFan99", tip: "away", text: "Bellingham még nem lőtt, de veszélyes lehet!", likes: 11, dislikes: 8, liked: false, disliked: false },
-    { id: 3, user: "TippZseni", tip: "home", text: "A hazai pálya és a középpálya ereje döntő lesz.", likes: 37, dislikes: 2, liked: false, disliked: false },
-  ]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState("");
   const [tip, setTip] = useState("home");
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
-  const categories = ["Mind", "⚽ Foci", "🏠 Lakhatás", "🗳️ Politika"];
-  const filtered = activeCategory === "Mind" ? TOPICS : TOPICS.filter(t => t.category === activeCategory);
+  useEffect(() => {
+    const fixPosts = [
+      {id:1, title:"Barcelona vs Real Madrid", category:"Foci", description:"UEFA BL Negyeddöntő", yes_votes:348, no_votes:98},
+      {id:2, title:"Arsenal vs Man City", category:"Foci", description:"Premier League · Ma 21:00", yes_votes:200, no_votes:100},
+      {id:3, title:"Albérletárak Budapesten", category:"Lakhatás", description:"Megfizethető-e még a főváros?", yes_votes:300, no_votes:243},
+      {id:4, title:"Önkormányzati választások", category:"Politika", description:"Ki a legjobb jelölt?", yes_votes:280, no_votes:263},
+    ];
+    setPosts(fixPosts);
+  }, []);
+
+  const categories = ["Mind", "Foci", "Lakhatás", "Politika"];
+  const filtered = activeCategory === "Mind" ? posts : posts.filter(p => p.category === activeCategory);
 
   const total = votes.home + votes.draw + votes.away;
   const ph = Math.round(votes.home / total * 100);
@@ -95,22 +105,22 @@ export default function Home() {
     }));
   }
 
-  const tipLabel: Record<string,string> = {home:"Barcelona", draw:"Döntetlen", away:"Real Madrid"};
+  const tipLabel: Record<string,string> = {home:"Igen", draw:"Nem tudom", away:"Nem"};
   const tipBg: Record<string,string> = {home:"#dcfce7", draw:"#fef9c3", away:"#fee2e2"};
   const tipColor: Record<string,string> = {home:"#166534", draw:"#92400e", away:"#991b1b"};
   const tipBorder: Record<string,string> = {home:"#16a34a", draw:"#d97706", away:"#dc2626"};
 
+  const categoryIcon: Record<string,string> = {"Foci":"⚽","Lakhatás":"🏠","Politika":"🗳️"};
+
   if (selectedTopic !== null) {
-    const topic = TOPICS.find(t => t.id === selectedTopic)!;
     return (
       <div style={{background:"#f8fafc",minHeight:"100vh",fontFamily:"system-ui,sans-serif"}}>
         <div style={{background:"white",borderBottom:"1px solid #e5e7eb",padding:"14px 16px",display:"flex",alignItems:"center",gap:"12px",position:"sticky",top:0,zIndex:10}}>
           <button onClick={()=>setSelectedTopic(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:"20px",padding:"4px"}}>←</button>
           <div>
-            <div style={{fontSize:"11px",color:"#6b7280"}}>{topic.category}</div>
-            <div style={{fontSize:"16px",fontWeight:"700"}}>{topic.title}</div>
+            <div style={{fontSize:"11px",color:"#6b7280"}}>{categoryIcon[selectedTopic.category]} {selectedTopic.category}</div>
+            <div style={{fontSize:"16px",fontWeight:"700"}}>{selectedTopic.title}</div>
           </div>
-          <span style={{marginLeft:"auto",background:topic.badgeColor,color:"white",fontSize:"11px",padding:"3px 10px",borderRadius:"99px"}}>{topic.badge}</span>
         </div>
 
         <div style={{maxWidth:"600px",margin:"0 auto",padding:"16px"}}>
@@ -145,18 +155,6 @@ export default function Home() {
               <div style={{background:"white",borderRadius:"12px",padding:"12px",marginBottom:"8px"}}>
                 <div style={{fontSize:"13px",color:"#374151",lineHeight:"1.7"}}>{aiSummary.summary}</div>
               </div>
-              {aiSummary.agree.length > 0 && (
-                <div style={{marginBottom:"6px"}}>
-                  <div style={{fontSize:"12px",fontWeight:"600",color:"#166534",marginBottom:"4px"}}>✅ Amiben egyetértenek</div>
-                  {aiSummary.agree.map((a,i) => <div key={i} style={{fontSize:"13px",color:"#1b5e20",background:"white",padding:"6px 10px",borderRadius:"8px",marginBottom:"4px"}}>{a}</div>)}
-                </div>
-              )}
-              {aiSummary.disagree.length > 0 && (
-                <div>
-                  <div style={{fontSize:"12px",fontWeight:"600",color:"#991b1b",marginBottom:"4px"}}>❌ Amin vitatkoznak</div>
-                  {aiSummary.disagree.map((d,i) => <div key={i} style={{fontSize:"13px",color:"#7f1d1d",background:"white",padding:"6px 10px",borderRadius:"8px",marginBottom:"4px"}}>{d}</div>)}
-                </div>
-              )}
               <button onClick={()=>setShowAll(!showAll)} style={{marginTop:"10px",background:"none",border:"1px solid #a5d6a7",borderRadius:"8px",padding:"6px 14px",cursor:"pointer",fontSize:"12px",color:"#166534",width:"100%"}}>
                 {showAll ? "Elrejtés ▲" : `Összes vélemény (${comments.length}) ▼`}
               </button>
@@ -225,28 +223,26 @@ export default function Home() {
         <div style={{maxWidth:"600px",margin:"0 auto",display:"flex",gap:"4px",overflowX:"auto"}}>
           {categories.map(cat => (
             <button key={cat} onClick={()=>setActiveCategory(cat)} style={{padding:"12px 16px",border:"none",background:"none",cursor:"pointer",fontWeight:activeCategory===cat?"700":"400",color:activeCategory===cat?"#1a1a2e":"#6b7280",borderBottom:activeCategory===cat?"3px solid #1a1a2e":"3px solid transparent",whiteSpace:"nowrap",fontSize:"14px",fontFamily:"inherit"}}>
-              {cat}
+              {cat === "Mind" ? "Mind" : categoryIcon[cat]+" "+cat}
             </button>
           ))}
         </div>
       </div>
 
       <div style={{maxWidth:"600px",margin:"0 auto",padding:"16px",display:"flex",flexDirection:"column",gap:"10px"}}>
-        {filtered.map(topic => (
-          <div key={topic.id} onClick={()=>setSelectedTopic(topic.id)} style={{background:"white",borderRadius:"16px",padding:"16px",boxShadow:"0 1px 4px rgba(0,0,0,0.06)",cursor:"pointer",transition:"transform 0.1s"}}>
+        {filtered.map(post => (
+          <div key={post.id} onClick={()=>setSelectedTopic(post)} style={{background:"white",borderRadius:"16px",padding:"16px",boxShadow:"0 1px 4px rgba(0,0,0,0.06)",cursor:"pointer"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"6px"}}>
-              <span style={{fontSize:"12px",color:"#6b7280"}}>{topic.category}</span>
-              <span style={{background:topic.badgeColor,color:"white",fontSize:"11px",padding:"2px 10px",borderRadius:"99px",fontWeight:"500"}}>{topic.badge}</span>
+              <span style={{fontSize:"12px",color:"#6b7280"}}>{categoryIcon[post.category]} {post.category}</span>
             </div>
-            <div style={{fontSize:"17px",fontWeight:"700",color:"#1a1a2e",marginBottom:"4px"}}>{topic.title}</div>
-            <div style={{fontSize:"13px",color:"#6b7280",marginBottom:"12px"}}>{topic.subtitle}</div>
+            <div style={{fontSize:"17px",fontWeight:"700",color:"#1a1a2e",marginBottom:"4px"}}>{post.title}</div>
+            <div style={{fontSize:"13px",color:"#6b7280",marginBottom:"12px"}}>{post.description}</div>
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
               <div style={{flex:1,height:"6px",borderRadius:"99px",overflow:"hidden",display:"flex",background:"#f3f4f6"}}>
-                <div style={{width:"64%",background:"#16a34a"}}></div>
-                <div style={{width:"18%",background:"#d97706"}}></div>
-                <div style={{width:"18%",background:"#dc2626"}}></div>
+                <div style={{width:Math.round(post.yes_votes/(post.yes_votes+post.no_votes)*100)+"%",background:"#16a34a"}}></div>
+                <div style={{width:Math.round(post.no_votes/(post.yes_votes+post.no_votes)*100)+"%",background:"#dc2626"}}></div>
               </div>
-              <span style={{fontSize:"12px",color:"#6b7280",whiteSpace:"nowrap"}}>543 szavazat</span>
+              <span style={{fontSize:"12px",color:"#6b7280",whiteSpace:"nowrap"}}>{post.yes_votes+post.no_votes} szavazat</span>
             </div>
           </div>
         ))}
