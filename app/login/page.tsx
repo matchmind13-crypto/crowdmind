@@ -15,9 +15,12 @@ export default function LoginPage() {
 
   async function handleSubmit() {
     if (isLogin) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setMessage(error.message);
-      else window.location.href = '/';
+      else {
+        localStorage.setItem('supabase_token', data.session?.access_token || '');
+        window.location.href = '/';
+      }
     } else {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) setMessage(error.message);
