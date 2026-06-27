@@ -41,15 +41,11 @@ export default function Home() {
   const [aiLoading, setAiLoading] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
-  useEffect(() => {
-    const fixPosts = [
-      {id:1, title:"Barcelona vs Real Madrid", category:"Foci", description:"UEFA BL Negyeddöntő", yes_votes:348, no_votes:98},
-      {id:2, title:"Arsenal vs Man City", category:"Foci", description:"Premier League · Ma 21:00", yes_votes:200, no_votes:100},
-      {id:3, title:"Albérletárak Budapesten", category:"Lakhatás", description:"Megfizethető-e még a főváros?", yes_votes:300, no_votes:243},
-      {id:4, title:"Önkormányzati választások", category:"Politika", description:"Ki a legjobb jelölt?", yes_votes:280, no_votes:263},
-    ];
-    setPosts(fixPosts);
-  }, []);
+useEffect(() => {
+  fetch('/api/posts')
+    .then(res => res.json())
+    .then(data => setPosts(data))
+}, []);
 
   const categories = ["Mind", "Foci", "Lakhatás", "Politika"];
   const filtered = activeCategory === "Mind" ? posts : posts.filter(p => p.category === activeCategory);
