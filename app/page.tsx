@@ -55,13 +55,24 @@ useEffect(() => {
   const pd = Math.round(votes.draw / total * 100);
   const pa = 100 - ph - pd;
 
-  function castVote(opt: string) {
-    if (userVote === opt) return;
-    const nv = {...votes, [opt]: votes[opt as keyof typeof votes] + 1};
-    if (userVote) nv[userVote as keyof typeof votes]--;
-    setVotes(nv);
-    setUserVote(opt);
+async function castVote(opt: string) {
+  if (userVote === opt) return;
+  const nv = {...votes, [opt]: votes[opt as keyof typeof votes] + 1};
+  if (userVote) nv[userVote as keyof typeof votes]--;
+  setVotes(nv);
+  setUserVote(opt);
+
+  if (selectedTopic) {
+    await fetch('/api/vote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        post_id: selectedTopic.id,
+        vote: opt
+      })
+    });
   }
+}
 
   async function postComment() {
     if (!text.trim()) return;
