@@ -80,7 +80,7 @@ export default function Home() {
 
   async function submitComment() {
     if (!text.trim() || !selectedTopic) return;
-    await supabase.from('comments').insert({
+    await (supabase.from('comments') as any).insert({
       post_id: selectedTopic.id,
       user: 'Felhasználó',
       tip,
