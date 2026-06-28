@@ -285,7 +285,7 @@ const textMuted = '#55556a';
   <button style={S.btnNav} onClick={() => window.location.href = '/trending'}><span style={{ fontSize: '20px' }}>🔥</span>Trending</button>
   <button style={S.fab} onClick={() => window.location.href = '/create'}>+</button>
   <button style={S.btnNav} onClick={() => window.location.href = '/categories'}><span style={{ fontSize: '20px' }}>📂</span>Kategóriák</button>
-  <button style={S.btnNav} onClick={() => window.location.href = '/profile'}><span style={{ fontSize: '20px' }}>👤</span>Profil</button>
+  <button style={S.btnNav} onClick={() => window.location.href = '/categories'}><span style={{ fontSize: '20px' }}>📂</span>Kategóriák</button>
 </div>
         
         
