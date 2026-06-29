@@ -244,7 +244,24 @@ export default function Home() {
         ))}
       </div>
 
-      <div style={{ padding: '4px 16px 8px', maxWidth: '480px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+       <div style={{ padding: '8px 0 4px', maxWidth: '480px', margin: '0 auto' }}>
+  <div style={{ fontSize: '14px', fontWeight: 700, color: textSecondary, padding: '0 16px', marginBottom: '8px' }}>🔥 Népszerű témák</div>
+  <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '0 16px', scrollbarWidth: 'none' }}>
+    {[...posts].sort((a, b) => (b.yes_votes + b.no_votes) - (a.yes_votes + a.no_votes)).slice(0, 5).map(post => {
+      const tot = (post.yes_votes || 0) + (post.no_votes || 0);
+      const yesPct = tot > 0 ? Math.round((post.yes_votes || 0) / tot * 100) : 50;
+      return (
+        <div key={post.id} onClick={() => openTopic(post)} style={{ flexShrink: 0, width: '140px', background: '#16161f', border: '1px solid #2a2a3a', borderRadius: '12px', padding: '12px', cursor: 'pointer' }}>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: '#8b5cf6', marginBottom: '4px', textTransform: 'uppercase' }}>{post.category}</div>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: '#f0f0ff', marginBottom: '8px', lineHeight: 1.3 }}>{post.title}</div>
+          <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>✓ {yesPct}%</div>
+          <div style={{ fontSize: '10px', color: '#55556a' }}>{tot} szavazat</div>
+        </div>
+      );
+    })}
+  </div>
+</div>
+       <div style={{ padding: '4px 16px 8px', maxWidth: '480px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontSize: '17px', fontWeight: 800 }}>Aktív viták</div>
         <div style={{ fontSize: '12px', color: textSecondary }}>{filtered.length} téma</div>
       </div>
