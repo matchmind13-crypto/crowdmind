@@ -250,12 +250,21 @@ export default function Home() {
     {[...posts].sort((a, b) => (b.yes_votes + b.no_votes) - (a.yes_votes + a.no_votes)).slice(0, 5).map(post => {
       const tot = (post.yes_votes || 0) + (post.no_votes || 0);
       const yesPct = tot > 0 ? Math.round((post.yes_votes || 0) / tot * 100) : 50;
+      const gradients: Record<string, string> = {
+        'Foci': 'linear-gradient(135deg, #064e3b, #10b981)',
+        'Lakhatás': 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
+        'Politika': 'linear-gradient(135deg, #7f1d1d, #ef4444)',
+        'Tech': 'linear-gradient(135deg, #3b0764, #8b5cf6)',
+        'Egyéb': 'linear-gradient(135deg, #1f2937, #6b7280)',
+      };
       return (
-        <div key={post.id} onClick={() => openTopic(post)} style={{ flexShrink: 0, width: '140px', background: '#16161f', border: '1px solid #2a2a3a', borderRadius: '12px', padding: '12px', cursor: 'pointer' }}>
-          <div style={{ fontSize: '10px', fontWeight: 700, color: '#8b5cf6', marginBottom: '4px', textTransform: 'uppercase' }}>{post.category}</div>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: '#f0f0ff', marginBottom: '8px', lineHeight: 1.3 }}>{post.title}</div>
-          <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>✓ {yesPct}%</div>
-          <div style={{ fontSize: '10px', color: '#55556a' }}>{tot} szavazat</div>
+        <div key={post.id} onClick={() => openTopic(post)} style={{ flexShrink: 0, width: '150px', background: gradients[post.category] || 'linear-gradient(135deg, #1f2937, #6b7280)', borderRadius: '14px', padding: '14px', cursor: 'pointer', minHeight: '100px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{post.category}</div>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: 'white', lineHeight: 1.3, marginBottom: '10px' }}>{post.title}</div>
+          <div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.9)', fontWeight: 700 }}>✓ {yesPct}%</div>
+            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>{tot} szavazat</div>
+          </div>
         </div>
       );
     })}
