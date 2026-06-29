@@ -80,7 +80,7 @@ export default function Home() {
 
   async function submitComment() {
     if (!text.trim() || !selectedTopic) return;
-    await supabase.from('comments').insert({
+    await (supabase.from('comments') as any).insert({
       post_id: selectedTopic.id,
       user: 'Felhasználó',
       tip,
@@ -118,24 +118,15 @@ export default function Home() {
   }
 
   const bg = '#0a0a0f';
-const card = '#16161f';
-const border = '#2a2a3a';
-const purple = '#7c3aed';
-const purpleLight = '#8b5cf6';
-const green = '#10b981';
-const red = '#ef4444';
-const textPrimary = '#f0f0ff';
-const textSecondary = '#9090b0';
-const textMuted = '#55556a';
-  
-  
-  
-  
-  
-  
-  
-  
-  
+  const card = '#16161f';
+  const border = '#2a2a3a';
+  const purple = '#7c3aed';
+  const purpleLight = '#8b5cf6';
+  const green = '#10b981';
+  const red = '#ef4444';
+  const textPrimary = '#f0f0ff';
+  const textSecondary = '#9090b0';
+  const textMuted = '#55556a';
 
   const S = {
     page: { background: bg, minHeight: '100vh', color: textPrimary, fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif' },
@@ -281,19 +272,12 @@ const textMuted = '#55556a';
       </div>
 
       <div style={S.bottomNav}>
-  <button style={S.btnNavActive} onClick={() => window.location.href = '/'}><span style={{ fontSize: '20px' }}>🏠</span>Főoldal</button>
-  <button style={S.btnNav} onClick={() => window.location.href = '/trending'}><span style={{ fontSize: '20px' }}>🔥</span>Trending</button>
-  <button style={S.fab} onClick={() => window.location.href = '/create'}>+</button>
-  <button style={S.btnNav} onClick={() => window.location.href = '/categories'}><span style={{ fontSize: '20px' }}>📂</span>Kategóriák</button>
-  <button style={S.btnNav} onClick={() => window.location.href = '/categories'}><span style={{ fontSize: '20px' }}>📂</span>Kategóriák</button>
-<button style={S.btnNav} onClick={() => window.location.href = '/profile'}><span style={{ fontSize: '20px' }}>👤</span>Profil</button>
-</div>
-      
-        
-        
-        
-        
-      
+        <button style={S.btnNavActive} onClick={() => window.location.href = '/'}><span style={{ fontSize: '20px' }}>🏠</span>Főoldal</button>
+        <button style={S.btnNav} onClick={() => window.location.href = '/trending'}><span style={{ fontSize: '20px' }}>🔥</span>Trending</button>
+        <button style={S.fab} onClick={() => window.location.href = '/create'}>+</button>
+        <button style={S.btnNav} onClick={() => window.location.href = '/categories'}><span style={{ fontSize: '20px' }}>📂</span>Kategóriák</button>
+        <button style={S.btnNav} onClick={() => window.location.href = '/profile'}><span style={{ fontSize: '20px' }}>👤</span>Profil</button>
+      </div>
     </div>
   );
 }
