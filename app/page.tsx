@@ -292,7 +292,7 @@ export default function Home() {
         <button style={S.btnNavActive} onClick={() => window.location.href = '/'}><span style={{ fontSize: '20px' }}>🏠</span>Főoldal</button>
         <button style={S.btnNav} onClick={() => window.location.href = '/trending'}><span style={{ fontSize: '20px' }}>🔥</span>Trending</button>
         <button style={S.fab} onClick={() => window.location.href = '/create'}>+</button>
-        <button style={S.btnNav} onClick={() => window.location.href = '/categories'}><span style={{ fontSize: '20px' }}>📂</span>Kategóriák</button>
+        <button style={S.btnNav} onClick={() => window.location.href = '/notifications'}><span style={{ fontSize: '20px' }}>🔔</span>Értesítések</button>
         <button style={S.btnNav} onClick={() => window.location.href = '/profile'}><span style={{ fontSize: '20px' }}>👤</span>Profil</button>
       </div>
     </div>
