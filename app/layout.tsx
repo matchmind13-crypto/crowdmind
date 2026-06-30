@@ -67,7 +67,7 @@ const categories = [
           borderRight: '1px solid #1f1f2b', padding: '20px 0',
           position: 'sticky', top: 0, overflowY: 'auto', flexShrink: 0
         }}>
-         <div style={{ padding: '0 20px 8px' }}>
+         <div style={{ padding: '0 20px 0px' }}>
           <img src="/logo.png" alt="CrowdMind" style={{ height: '52px', width: 'auto', filter: 'brightness(1.3) contrast(1.1)', mixBlendMode: 'screen' }} />
           </div>
 
