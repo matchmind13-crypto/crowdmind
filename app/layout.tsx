@@ -68,7 +68,7 @@ const categories = [
           position: 'sticky', top: 0, overflowY: 'auto', flexShrink: 0
         }}>
          <div style={{ padding: '0 20px 20px' }}>
-           <img src="/logo.png" alt="CrowdMind" style={{ height: '130px', width: 'auto', mixBlendMode: 'lighten' }} />
+           <img src="/logo.png" alt="CrowdMind" style={{ height: '48px', width: 'auto', mixBlendMode: 'screen', display: 'block' }} />
           </div>
 
           <nav style={{ padding: '8px 0' }}>
