@@ -13,3 +13,8 @@ body {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: #111118; }
 ::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 3px; }
+@media (min-width: 1024px) {
+  .rightPanel {
+    display: block !important;
+  }
+}
