@@ -286,11 +286,14 @@ export default function Home() {
             <div style={{ fontSize: '13px', fontWeight: 700, color: textSecondary, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>🔥 Trendek</div>
             <div style={S.card}>
               {trending.map((post, i) => (
-                <div key={post.id} onClick={() => openTopic(post)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < trending.length - 1 ? `1px solid ${border}` : 'none', cursor: 'pointer' }}>
+               <div key={post.id} onClick={() => openTopic(post)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < trending.length - 1 ? `1px solid ${border}` : 'none', cursor: 'pointer' }}>
                   <div>
                     <div style={{ fontSize: '11px', color: purpleLight, fontWeight: 700 }}>#{i + 1}</div>
                     <div style={{ fontSize: '13px', fontWeight: 600 }}>{post.title}</div>
                   </div>
+                  <span style={{ color: (post.yes_votes || 0) >= (post.no_votes || 0) ? green : red, fontSize: '16px' }}>
+                    {(post.yes_votes || 0) >= (post.no_votes || 0) ? '↑' : '↓'}
+                  </span>
                 </div>
               ))}
             </div>
