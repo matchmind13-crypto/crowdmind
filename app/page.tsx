@@ -141,7 +141,7 @@ export default function Home() {
   const S = {
     page: { background: bg, minHeight: '100vh', color: textPrimary, fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif' },
     card: { background: card, border: `1px solid ${border}`, borderRadius: '16px', padding: '16px', marginBottom: '10px', cursor: 'pointer' },
-    categoryLabel: { fontSize: '11px', fontWeight: 700, color: purpleLight, textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '6px' },
+    categoryLabel: { fontSize: '10px', fontWeight: 700, color: purpleLight, textTransform: 'uppercase' as const, letterSpacing: '0.06em', display: 'inline-block', background: 'rgba(124,58,237,0.15)', padding: '3px 8px', borderRadius: '6px', marginBottom: '8px' },
     title: { fontSize: '16px', fontWeight: 700, marginBottom: '8px', lineHeight: 1.3 },
     desc: { fontSize: '13px', color: textSecondary, marginBottom: '12px', lineHeight: 1.5 },
     barBg: { height: '5px', background: '#111118', borderRadius: '3px', overflow: 'hidden', marginBottom: '8px' },
