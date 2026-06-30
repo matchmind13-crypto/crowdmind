@@ -6,15 +6,31 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const categories = [
-    { name: 'Sport', icon: '⚽' },
-    { name: 'Foci', icon: '🥅' },
-    { name: 'Technológia', icon: '💻' },
-    { name: 'Autók', icon: '🚗' },
-    { name: 'Pénzügy', icon: '💰' },
-    { name: 'Egészség', icon: '❤️' },
-    { name: 'Utazás', icon: '✈️' },
-    { name: 'Film & Sorozat', icon: '🎬' },
+const categories = [
+    { name: 'Sport', icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9090b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    )},
+    { name: 'Foci', icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9090b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="12 7 15 9.5 14 13 10 13 9 9.5 12 7"/></svg>
+    )},
+    { name: 'Technológia', icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9090b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    )},
+    { name: 'Autók', icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9090b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17h14l-1.5-7H6.5z"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
+    )},
+    { name: 'Pénzügy', icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9090b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    )},
+    { name: 'Egészség', icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9090b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    )},
+    { name: 'Utazás', icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9090b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+    )},
+    { name: 'Film & Sorozat', icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9090b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M7 3v18M17 3v18"/></svg>
+    )},
   ];
 
   const navItems = [
@@ -84,7 +100,7 @@ export default function RootLayout({
               onMouseEnter={e => (e.currentTarget.style.background = '#16161f')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
-                <span style={{ fontSize: '16px' }}>{cat.icon}</span>
+                {cat.icon}
                 {cat.name}
               </Link>
             ))}
