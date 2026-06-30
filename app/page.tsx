@@ -231,7 +231,13 @@ export default function Home() {
 
   return (
     <div style={S.page}>
-     
+     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderBottom: `1px solid ${border}`, maxWidth: '480px', margin: '0 auto' }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: card, border: `1px solid ${border}`, borderRadius: '10px', padding: '8px 12px' }}>
+            <span style={{ color: textSecondary, marginRight: '8px' }}>🔍</span>
+            <input type="text" placeholder="Keresés témákra..." style={{ background: 'none', border: 'none', outline: 'none', color: textPrimary, fontSize: '14px', flex: 1 }} />
+          </div>
+          <button onClick={() => window.location.href = '/create'} style={{ background: `linear-gradient(135deg, ${purple}, ${purpleLight})`, border: 'none', borderRadius: '10px', color: 'white', padding: '9px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Új téma</button>
+        </div>
 
       <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '12px 16px', scrollbarWidth: 'none', maxWidth: '480px', margin: '0 auto' }}>
         {categories.map(cat => (
