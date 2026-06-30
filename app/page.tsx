@@ -301,7 +301,7 @@ export default function Home() {
       </div>
     </div>
 
-      <div style={{ width: '300px', flexShrink: 0, padding: '16px', borderLeft: `1px solid ${border}`, display: 'none' }} className="rightPanel">
+      <div style={{ width: '300px', flexShrink: 0, padding: '16px', borderLeft: `1px solid ${border}`, display: typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'block' : 'none' }}>
         <div style={{ fontSize: '13px', fontWeight: 700, color: textSecondary, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>🔥 Trendek</div>
         <div style={S.card}>
           {[...posts].sort((a, b) => (b.yes_votes + b.no_votes) - (a.yes_votes + a.no_votes)).slice(0, 5).map((post, i) => (
