@@ -67,7 +67,8 @@ const categories = [
           borderRight: '1px solid #1f1f2b', padding: '20px 0',
           position: 'sticky', top: 0, overflowY: 'auto', flexShrink: 0
         }}>
-          <div style={{ padding: '0 20px 20px' }}>
+         <div style={{ padding: '0 20px 20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <img src="/logo.png" alt="CrowdMind" style={{ height: '28px', width: 'auto' }} />
             <span style={{ fontSize: '20px', fontWeight: 'bold' }}>
               CROWD<span style={{ color: '#8b5cf6' }}>MIND</span>
             </span>
