@@ -231,7 +231,9 @@ export default function Home() {
 
   return (
     <div style={S.page}>
-     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderBottom: `1px solid ${border}`, maxWidth: '480px', margin: '0 auto' }}>
+    <div style={{ display: 'flex' }}>
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderBottom: `1px solid ${border}`, maxWidth: '480px', margin: '0 auto' }}>
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: card, border: `1px solid ${border}`, borderRadius: '10px', padding: '8px 12px' }}>
             <span style={{ color: textSecondary, marginRight: '8px' }}>🔍</span>
             <input type="text" placeholder="Keresés témákra..." style={{ background: 'none', border: 'none', outline: 'none', color: textPrimary, fontSize: '14px', flex: 1 }} />
@@ -297,8 +299,28 @@ export default function Home() {
           );
         })}
       </div>
+    </div>
 
-     
+      <div style={{ width: '300px', flexShrink: 0, padding: '16px', borderLeft: `1px solid ${border}`, display: 'none' }} className="rightPanel">
+        <div style={{ fontSize: '13px', fontWeight: 700, color: textSecondary, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>🔥 Trendek</div>
+        <div style={S.card}>
+          {[...posts].sort((a, b) => (b.yes_votes + b.no_votes) - (a.yes_votes + a.no_votes)).slice(0, 5).map((post, i) => (
+            <div key={post.id} onClick={() => openTopic(post)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < 4 ? `1px solid ${border}` : 'none', cursor: 'pointer' }}>
+              <div>
+                <div style={{ fontSize: '11px', color: purpleLight, fontWeight: 700 }}>#{i + 1}</div>
+                <div style={{ fontSize: '13px', fontWeight: 600 }}>{post.title}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ fontSize: '13px', fontWeight: 700, color: textSecondary, margin: '20px 0 16px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Hangulatindex</div>
+        <div style={S.card}>
+          <div style={{ textAlign: 'center', fontSize: '32px', fontWeight: 800, color: green }}>65%</div>
+          <div style={{ textAlign: 'center', fontSize: '12px', color: textSecondary }}>Pozitív hangulat</div>
+        </div>
+      </div>
+    </div>
     </div>
   );
 }
