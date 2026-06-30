@@ -231,12 +231,7 @@ export default function Home() {
 
   return (
     <div style={S.page}>
-      <div style={S.navbar}>
-        <div style={S.navInner}>
-          <img src="/logo.png" alt="CrowdMind" style={{ height: '40px', width: 'auto' }} />
-          <button onClick={() => window.location.href = '/login'} style={{ background: card, border: `1px solid ${border}`, borderRadius: '10px', color: textSecondary, padding: '8px 14px', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}>Belépés</button>
-        </div>
-      </div>
+     
 
       <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '12px 16px', scrollbarWidth: 'none', maxWidth: '480px', margin: '0 auto' }}>
         {categories.map(cat => (
@@ -297,17 +292,7 @@ export default function Home() {
         })}
       </div>
 
-      <div style={S.bottomNav}>
-        <button style={S.btnNavActive} onClick={() => window.location.href = '/'}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Főoldal</button>
-<button style={S.btnNav} onClick={() => window.location.href = '/categories'}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Kategóriák</button>
-<button style={S.fab} onClick={() => window.location.href = '/create'}>+</button>
-<button style={S.btnNav} onClick={() => window.location.href = '/notifications'}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Értesítések</button>
-<button style={S.btnNav} onClick={() => window.location.href = '/profile'}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profil</button>
-        
-        
-        
-        
-      </div>
+     
     </div>
   );
 }
