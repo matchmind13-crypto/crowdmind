@@ -105,6 +105,61 @@ const categories = [
               </Link>
             ))}
           </nav>
+          <div style={{ padding: '20px 20px 8px', fontSize: '12px', color: '#666', letterSpacing: '0.5px' }}>
+            ESZKÖZÖK
+          </div>
+          <nav>
+            <Link href="/ai-elemzo" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 20px', color: '#c0c0d0', textDecoration: 'none', fontSize: '14px' }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#16161f')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9090b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2z"/></svg>
+              AI elemző
+            </Link>
+            <Link href="/osszehasonlito" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 20px', color: '#c0c0d0', textDecoration: 'none', fontSize: '14px' }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#16161f')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9090b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              Összehasonlító
+            </Link>
+            <Link href="/hangulatindex" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 20px', color: '#c0c0d0', textDecoration: 'none', fontSize: '14px' }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#16161f')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9090b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              Hangulatindex
+            </Link>
+            <Link href="/kozossegi-terkep" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 20px', color: '#c0c0d0', textDecoration: 'none', fontSize: '14px' }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#16161f')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9090b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+              Közösségi térkép
+            </Link>
+          </nav>
+
+          <div style={{ margin: '20px 20px', padding: '16px', background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontWeight: 700, fontSize: '14px' }}>
+              <span>✨</span> AI asszisztens
+            </div>
+            <div style={{ fontSize: '12px', color: '#9090b0', lineHeight: 1.5, marginBottom: '12px' }}>
+              Kérdezd az AI-t bármilyen témáról, és kapj azonnali elemzést!
+            </div>
+            <button style={{ width: '100%', padding: '10px', background: '#7c3aed', border: 'none', borderRadius: '10px', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
+              Chat indítása
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', fontSize: '14px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9090b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              Sötét mód
+            </span>
+            <div style={{ width: '36px', height: '20px', background: '#7c3aed', borderRadius: '10px', position: 'relative' }}>
+              <div style={{ width: '16px', height: '16px', background: 'white', borderRadius: '50%', position: 'absolute', top: '2px', right: '2px' }} />
+            </div>
+          </div>
         </div>
 
         {/* Fő tartalom */}
