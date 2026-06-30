@@ -37,12 +37,22 @@ export default function Home() {
   const [tip, setTip] = useState('home');
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [isWide, setIsWide] = useState(false);
 
   useEffect(() => {
     fetch('/api/posts')
       .then(res => res.json())
       .then(data => setPosts(data))
       .catch(() => setPosts([]));
+  }, []);
+
+  useEffect(() => {
+    function checkWidth() {
+      setIsWide(window.innerWidth >= 1100);
+    }
+    checkWidth();
+    window.addEventListener('resize', checkWidth);
+    return () => window.removeEventListener('resize', checkWidth);
   }, []);
 
   const categories = ['Mind', 'Foci', 'Lakhatás', 'Politika', 'Tech', 'Egyéb'];
@@ -130,8 +140,6 @@ export default function Home() {
 
   const S = {
     page: { background: bg, minHeight: '100vh', color: textPrimary, fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif' },
-    navbar: { background: bg, borderBottom: `1px solid ${border}`, padding: '12px 16px', position: 'sticky' as const, top: 0, zIndex: 100 },
-    navInner: { maxWidth: '480px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
     card: { background: card, border: `1px solid ${border}`, borderRadius: '16px', padding: '16px', marginBottom: '10px', cursor: 'pointer' },
     categoryLabel: { fontSize: '11px', fontWeight: 700, color: purpleLight, textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '6px' },
     title: { fontSize: '16px', fontWeight: 700, marginBottom: '8px', lineHeight: 1.3 },
@@ -139,10 +147,6 @@ export default function Home() {
     barBg: { height: '5px', background: '#111118', borderRadius: '3px', overflow: 'hidden', marginBottom: '8px' },
     barFill: (pct: number) => ({ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #10b981, #34d399)', borderRadius: '3px' }),
     voteRow: { display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600 },
-    btnNav: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '3px', background: 'none', border: 'none', color: textMuted, cursor: 'pointer', fontSize: '10px', fontWeight: 600, padding: '4px 12px' },
-    btnNavActive: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '3px', background: 'none', border: 'none', color: purpleLight, cursor: 'pointer', fontSize: '10px', fontWeight: 600, padding: '4px 12px' },
-    fab: { width: '48px', height: '48px', background: `linear-gradient(135deg, ${purple}, ${purpleLight})`, borderRadius: '50%', border: 'none', color: 'white', fontSize: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(124,58,237,0.5)', marginTop: '-8px' },
-    bottomNav: { position: 'fixed' as const, bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', background: bg, borderTop: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '10px 8px 24px', zIndex: 100 },
   };
 
   if (selectedTopic) {
@@ -229,98 +233,76 @@ export default function Home() {
     );
   }
 
+  const trending = [...posts].sort((a, b) => (b.yes_votes + b.no_votes) - (a.yes_votes + a.no_votes)).slice(0, 5);
+
   return (
     <div style={S.page}>
-    <div style={{ display: 'flex' }}>
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderBottom: `1px solid ${border}`, maxWidth: '480px', margin: '0 auto' }}>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: card, border: `1px solid ${border}`, borderRadius: '10px', padding: '8px 12px' }}>
-            <span style={{ color: textSecondary, marginRight: '8px' }}>🔍</span>
-            <input type="text" placeholder="Keresés témákra..." style={{ background: 'none', border: 'none', outline: 'none', color: textPrimary, fontSize: '14px', flex: 1 }} />
-          </div>
-          <button onClick={() => window.location.href = '/create'} style={{ background: `linear-gradient(135deg, ${purple}, ${purpleLight})`, border: 'none', borderRadius: '10px', color: 'white', padding: '9px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Új téma</button>
-        </div>
-
-      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '12px 16px', scrollbarWidth: 'none', maxWidth: '480px', margin: '0 auto' }}>
-        {categories.map(cat => (
-          <button key={cat} onClick={() => setActiveCategory(cat)} style={{ flexShrink: 0, padding: '7px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: '1.5px solid', whiteSpace: 'nowrap', background: activeCategory === cat ? purple : 'transparent', borderColor: activeCategory === cat ? purple : border, color: activeCategory === cat ? 'white' : textSecondary }}>{cat}</button>
-        ))}
-      </div>
-
-       <div style={{ padding: '8px 0 4px', maxWidth: '480px', margin: '0 auto' }}>
-  <div style={{ fontSize: '14px', fontWeight: 700, color: textSecondary, padding: '0 16px', marginBottom: '8px' }}>🔥 Népszerű témák</div>
-  <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '0 16px', scrollbarWidth: 'none' }}>
-    {[...posts].sort((a, b) => (b.yes_votes + b.no_votes) - (a.yes_votes + a.no_votes)).slice(0, 5).map(post => {
-      const tot = (post.yes_votes || 0) + (post.no_votes || 0);
-      const yesPct = tot > 0 ? Math.round((post.yes_votes || 0) / tot * 100) : 50;
-      const gradients: Record<string, string> = {
-        'Foci': 'linear-gradient(135deg, #064e3b, #10b981)',
-        'Lakhatás': 'linear-gradient(135deg, #1e3a5f, #3b82f6)',
-        'Politika': 'linear-gradient(135deg, #7f1d1d, #ef4444)',
-        'Tech': 'linear-gradient(135deg, #3b0764, #8b5cf6)',
-        'Egyéb': 'linear-gradient(135deg, #1f2937, #6b7280)',
-      };
-      return (
-        <div key={post.id} onClick={() => openTopic(post)} style={{ flexShrink: 0, width: '150px', background: gradients[post.category] || 'linear-gradient(135deg, #1f2937, #6b7280)', borderRadius: '14px', padding: '14px', cursor: 'pointer', minHeight: '100px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{post.category}</div>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: 'white', lineHeight: 1.3, marginBottom: '10px' }}>{post.title}</div>
-          <div>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.9)', fontWeight: 700 }}>✓ {yesPct}%</div>
-            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>{tot} szavazat</div>
-          </div>
-        </div>
-      );
-    })}
-  </div>
-</div>
-       <div style={{ padding: '4px 16px 8px', maxWidth: '480px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontSize: '17px', fontWeight: 800 }}>Aktív viták</div>
-        <div style={{ fontSize: '12px', color: textSecondary }}>{filtered.length} téma</div>
-      </div>
-
-      <div style={{ padding: '0 16px 100px', maxWidth: '480px', margin: '0 auto' }}>
-        {filtered.map(post => {
-          const yes = post.yes_votes || 0;
-          const no = post.no_votes || 0;
-          const tot = yes + no;
-          const yesPct = tot > 0 ? Math.round(yes / tot * 100) : 50;
-          return (
-            <div key={post.id} onClick={() => openTopic(post)} style={S.card}>
-              <div style={S.categoryLabel}>{categoryEmojis[post.category] || '💬'} {post.category}</div>
-              <div style={S.title}>{post.title}</div>
-              {post.description && <div style={S.desc}>{post.description}</div>}
-              <div style={S.barBg}><div style={S.barFill(yesPct)} /></div>
-              <div style={S.voteRow}>
-                <span style={{ color: green }}>✓ {yesPct}% igen</span>
-                <span style={{ color: textMuted }}>{tot} szavazat</span>
-                <span style={{ color: red }}>✗ {100 - yesPct}% nem</span>
-              </div>
+      <div style={{ display: 'flex' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderBottom: `1px solid ${border}` }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: card, border: `1px solid ${border}`, borderRadius: '10px', padding: '8px 12px' }}>
+              <span style={{ color: textSecondary, marginRight: '8px' }}>🔍</span>
+              <input type="text" placeholder="Keresés témákra..." style={{ background: 'none', border: 'none', outline: 'none', color: textPrimary, fontSize: '14px', flex: 1 }} />
             </div>
-          );
-        })}
-      </div>
-    </div>
+            <button onClick={() => window.location.href = '/create'} style={{ background: `linear-gradient(135deg, ${purple}, ${purpleLight})`, border: 'none', borderRadius: '10px', color: 'white', padding: '9px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Új téma</button>
+          </div>
 
-      <div style={{ width: '300px', flexShrink: 0, padding: '16px', borderLeft: `1px solid ${border}`, display: typeof window !== 'undefined' && window.innerWidth >= 768 ? 'block' : 'none' }}>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: textSecondary, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>🔥 Trendek</div>
-        <div style={S.card}>
-          {[...posts].sort((a, b) => (b.yes_votes + b.no_votes) - (a.yes_votes + a.no_votes)).slice(0, 5).map((post, i) => (
-            <div key={post.id} onClick={() => openTopic(post)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < 4 ? `1px solid ${border}` : 'none', cursor: 'pointer' }}>
-              <div>
-                <div style={{ fontSize: '11px', color: purpleLight, fontWeight: 700 }}>#{i + 1}</div>
-                <div style={{ fontSize: '13px', fontWeight: 600 }}>{post.title}</div>
-              </div>
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '12px 16px', scrollbarWidth: 'none' }}>
+            {categories.map(cat => (
+              <button key={cat} onClick={() => setActiveCategory(cat)} style={{ flexShrink: 0, padding: '7px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: '1.5px solid', whiteSpace: 'nowrap', background: activeCategory === cat ? purple : 'transparent', borderColor: activeCategory === cat ? purple : border, color: activeCategory === cat ? 'white' : textSecondary }}>{cat}</button>
+            ))}
+          </div>
+
+          <div style={{ padding: '4px 16px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: '17px', fontWeight: 800 }}>Aktív viták</div>
+            <div style={{ fontSize: '12px', color: textSecondary }}>{filtered.length} téma</div>
+          </div>
+
+          <div style={{ padding: '0 16px 100px' }}>
+            {filtered.map(post => {
+              const yes = post.yes_votes || 0;
+              const no = post.no_votes || 0;
+              const tot = yes + no;
+              const yesPct = tot > 0 ? Math.round(yes / tot * 100) : 50;
+              return (
+                <div key={post.id} onClick={() => openTopic(post)} style={S.card}>
+                  <div style={S.categoryLabel}>{categoryEmojis[post.category] || '💬'} {post.category}</div>
+                  <div style={S.title}>{post.title}</div>
+                  {post.description && <div style={S.desc}>{post.description}</div>}
+                  <div style={S.barBg}><div style={S.barFill(yesPct)} /></div>
+                  <div style={S.voteRow}>
+                    <span style={{ color: green }}>✓ {yesPct}% igen</span>
+                    <span style={{ color: textMuted }}>{tot} szavazat</span>
+                    <span style={{ color: red }}>✗ {100 - yesPct}% nem</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {isWide && (
+          <div style={{ width: '300px', flexShrink: 0, padding: '16px', borderLeft: `1px solid ${border}` }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: textSecondary, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>🔥 Trendek</div>
+            <div style={S.card}>
+              {trending.map((post, i) => (
+                <div key={post.id} onClick={() => openTopic(post)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < trending.length - 1 ? `1px solid ${border}` : 'none', cursor: 'pointer' }}>
+                  <div>
+                    <div style={{ fontSize: '11px', color: purpleLight, fontWeight: 700 }}>#{i + 1}</div>
+                    <div style={{ fontSize: '13px', fontWeight: 600 }}>{post.title}</div>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <div style={{ fontSize: '13px', fontWeight: 700, color: textSecondary, margin: '20px 0 16px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Hangulatindex</div>
-        <div style={S.card}>
-          <div style={{ textAlign: 'center', fontSize: '32px', fontWeight: 800, color: green }}>65%</div>
-          <div style={{ textAlign: 'center', fontSize: '12px', color: textSecondary }}>Pozitív hangulat</div>
-        </div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: textSecondary, margin: '20px 0 16px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Hangulatindex</div>
+            <div style={S.card}>
+              <div style={{ textAlign: 'center', fontSize: '32px', fontWeight: 800, color: green }}>65%</div>
+              <div style={{ textAlign: 'center', fontSize: '12px', color: textSecondary }}>Pozitív hangulat</div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
     </div>
   );
 }
