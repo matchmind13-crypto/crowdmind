@@ -62,21 +62,40 @@ export default function Home() {
     Foci: '⚽', Lakhatás: '🏠', Politika: '🏛️', Tech: '💻', Egyéb: '💬'
   };
 
-  async function castPostVote(postId: number, vote: 'yes' | 'no') {
-    await fetch('/api/vote', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ post_id: postId, vote }),
-    });
-    const res = await fetch('/api/posts');
-    const data = await res.json();
-    setPosts(data);
-    if (selectedTopic) {
-      const updated = data.find((p: Post) => p.id === postId);
-      if (updated) setSelectedTopic(updated);
-    }
+async function castPostVote(postId: number, vote: 'yes' | 'no') {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    alert('Be kell jelentkezned a szavazáshoz!');
+    return;
   }
 
+  const res = await fetch('/api/vote', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ post_id: postId, vote, user_id: session.user.id }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    if (err.code === '23505') {
+      alert('Már szavaztál erre a posztra!');
+    } else {
+      alert('Hiba történt a szavazás közben.');
+    }
+    return;
+  }
+
+  const postsRes = await fetch('/api/posts');
+  const data = await postsRes.json();
+  setPosts(data);
+  if (selectedTopic) {
+    const updated = data.find((p: Post) => p.id === postId);
+    if (updated) setSelectedTopic(updated);
+  }
+}
   async function loadComments(postId: number) {
     const { data } = await supabase
       .from('comments')
