@@ -277,14 +277,21 @@ async function castPostVote(postId: number, vote: 'yes' | 'no') {
               <input type="text" placeholder="Keresés témákra..." style={{ background: 'none', border: 'none', outline: 'none', color: textPrimary, fontSize: '14px', flex: 1 }} />
             </div>
             <button onClick={() => window.location.href = '/create'} style={{ background: `linear-gradient(135deg, ${purple}, ${purpleLight})`, border: 'none', borderRadius: '10px', color: 'white', padding: '9px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Új téma</button>
+            {userEmail ? (
+              <button onClick={handleLogout} style={{ marginLeft: '8px', padding: '8px 14px', borderRadius: '10px', background: 'transparent', border: `1px solid ${border}`, color: textSecondary, fontSize: '13px', cursor: 'pointer' }}>
+                {userEmail.split('@')[0]} · Kijelentkezés
+              </button>
+            ) : (
+              <button onClick={() => window.location.href = '/login'} style={{ marginLeft: '8px', padding: '8px 14px', borderRadius: '10px', background: `linear-gradient(135deg, ${purple}, ${purpleLight})`, border: 'none', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                Bejelentkezés
+              </button>
+            )}
           </div>
-
           <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '12px 16px', scrollbarWidth: 'none' }}>
             {categories.map(cat => (
               <button key={cat} onClick={() => setActiveCategory(cat)} style={{ flexShrink: 0, padding: '7px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: '1.5px solid', whiteSpace: 'nowrap', background: activeCategory === cat ? purple : 'transparent', borderColor: activeCategory === cat ? purple : border, color: activeCategory === cat ? 'white' : textSecondary }}>{cat}</button>
             ))}
           </div>
-
           <div style={{ padding: '4px 16px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: '17px', fontWeight: 800 }}>Aktív viták</div>
             <div style={{ fontSize: '12px', color: textSecondary }}>{filtered.length} téma</div>
