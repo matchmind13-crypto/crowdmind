@@ -1,45 +1,41 @@
 'use client';
 import { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from '../../lib/supabase';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit() {
+    setLoading(true);
+    setMessage('');
     if (isLogin) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setMessage(error.message);
-      else {
-        localStorage.setItem('supabase_token', data.session?.access_token || '');
-        window.location.href = '/';
-      }
+      else window.location.href = '/';
     } else {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) setMessage(error.message);
-      else setMessage('Ellenőrizd az emailed a megerősítő linkért!');
+      else window.location.href = '/';
     }
+    setLoading(false);
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: '100px auto', padding: 20 }}>
+    <div style={{ maxWidth: 400, margin: '100px auto', padding: 20, fontFamily: 'sans-serif' }}>
       <h1>{isLogin ? 'Bejelentkezés' : 'Regisztráció'}</h1>
-      <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} style={{ display: 'block', width: '100%', marginBottom: 10, padding: 8 }} />
-      <input type="password" placeholder="Jelszó" value={password} onChange={e => setPassword(e.target.value)} style={{ display: 'block', width: '100%', marginBottom: 10, padding: 8 }} />
-      <button onClick={handleSubmit} style={{ width: '100%', padding: 10, marginBottom: 10 }}>
-        {isLogin ? 'Bejelentkezés' : 'Regisztráció'}
+      <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} style={{ display: 'block', width: '100%', padding: 10, marginBottom: 10 }} />
+      <input type="password" placeholder="Jelszó" value={password} onChange={e => setPassword(e.target.value)} style={{ display: 'block', width: '100%', padding: 10, marginBottom: 10 }} />
+      <button onClick={handleSubmit} disabled={loading} style={{ width: '100%', padding: 10, marginBottom: 10 }}>
+        {loading ? 'Folyamatban...' : (isLogin ? 'Bejelentkezés' : 'Regisztráció')}
       </button>
-      <button onClick={() => setIsLogin(!isLogin)} style={{ width: '100%', padding: 10 }}>
-        {isLogin ? 'Még nincs fiókom' : 'Már van fiókom'}
-      </button>
-      {message && <p>{message}</p>}
+      <p onClick={() => setIsLogin(!isLogin)} style={{ cursor: 'pointer', color: 'blue', textAlign: 'center' }}>
+        {isLogin ? 'Nincs még fiókod? Regisztrálj' : 'Van már fiókod? Jelentkezz be'}
+      </p>
+      {message && <p style={{ color: 'red' }}>{message}</p>}
     </div>
   );
 }
