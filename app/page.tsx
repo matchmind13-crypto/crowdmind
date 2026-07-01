@@ -38,7 +38,7 @@ export default function Home() {
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [isWide, setIsWide] = useState(false);
-
+const [userEmail, setUserEmail] = useState<string | null>(null);
   useEffect(() => {
     fetch('/api/posts')
       .then(res => res.json())
@@ -54,7 +54,20 @@ export default function Home() {
     window.addEventListener('resize', checkWidth);
     return () => window.removeEventListener('resize', checkWidth);
   }, []);
+useEffect(() => {
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    setUserEmail(session?.user?.email ?? null);
+  });
+  const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    setUserEmail(session?.user?.email ?? null);
+  });
+  return () => listener.subscription.unsubscribe();
+}, []);
 
+async function handleLogout() {
+  await supabase.auth.signOut();
+  setUserEmail(null);
+}
   const categories = ['Mind', 'Foci', 'Lakhatás', 'Politika', 'Tech', 'Egyéb'];
   const filtered = activeCategory === 'Mind' ? posts : posts.filter(p => p.category === activeCategory);
 
