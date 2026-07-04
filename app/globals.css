@@ -1,20 +1,61 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-body {
-  background-color: #0a0a0f;
-  color: #f0f0ff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-  min-height: 100vh;
-  margin: 0;
+/* ============================================================
+   CrowdMind dizajn-rendszer (Tailwind v4 @theme)
+   A tokenekbol automatikusan generalodnak a szin-utility-k
+   (peldaul bg-card, text-muted, border-line).
+   ============================================================ */
+@theme {
+  --color-bg: #05070d;            /* fő háttér – majdnem fekete navy */
+  --color-bg-elevated: #080d16;   /* enyhén kiemelt háttér */
+  --color-card: #0b111e;          /* kártya alap */
+  --color-card-2: #0e1524;        /* kártya, kicsit világosabb */
+  --color-hover: #131c30;         /* hover állapot */
+  --color-line: #1b2438;          /* finom border */
+
+  --color-accent: #8b5cf6;        /* lila accent */
+  --color-accent-strong: #7c3aed; /* erős lila */
+  --color-accent-soft: #a78bfa;   /* halvány lila */
+
+  --color-positive: #22c55e;      /* pozitív – zöld */
+  --color-neutral: #eab308;       /* semleges – sárga */
+  --color-negative: #ef4444;      /* negatív – piros */
+
+  --color-fg: #e7e9f0;            /* elsődleges szöveg */
+  --color-fg-soft: #b8bfd0;       /* lágyabb szöveg */
+  --color-muted: #7d859b;         /* halvány / meta szöveg */
+
+  --radius-card: 16px;
 }
 
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: #111118; }
-::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 3px; }
-@media (min-width: 1024px) {
-  .rightPanel {
-    display: block !important;
-  }
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Finom, sötét scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #26304a; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #33405f; }
+
+/* Üveg-hatású kártya segédosztály */
+@utility glass {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-line);
+}
+
+/* Lila gradient panel (a lenyitható fejlécekhez) */
+@utility panel-gradient {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(124,58,237,0.16), transparent 55%),
+    linear-gradient(180deg, rgba(139,92,246,0.06), rgba(139,92,246,0.02));
 }
