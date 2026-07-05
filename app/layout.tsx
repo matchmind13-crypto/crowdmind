@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { UsernameSetupModal } from '@/components/UsernameSetupModal';
 
 export const metadata: Metadata = {
   title: 'CrowdMind',
@@ -13,7 +14,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="hu">
-      <body>{children}</body>
+      <body>
+        {children}
+        <UsernameSetupModal />
+      </body>
     </html>
   );
 }
