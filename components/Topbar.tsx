@@ -1,8 +1,12 @@
 'use client';
-import { Search, Plus, Bell, MessageSquare, ChevronDown, User as UserIcon } from 'lucide-react';
-import { currentUser } from '@/data/users';
+import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
+import { Search, Plus, Bell, MessageSquare, ChevronDown, User as UserIcon, LogOut, UserCircle, LogIn } from 'lucide-react';
+import { useAuth } from '@/lib/useAuth';
 
 export function Topbar() {
+  const { user, loading, signOut } = useAuth();
+
   return (
     <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-line bg-bg/80 px-5 py-3 backdrop-blur-xl">
       {/* Kereső */}
@@ -18,29 +22,85 @@ export function Topbar() {
       </div>
 
       <div className="ml-auto flex items-center gap-2.5">
-        <button className="inline-flex items-center gap-1.5 rounded-xl bg-accent-strong px-3.5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent">
+        <Link
+          href="/create"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-accent-strong px-3.5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent"
+        >
           <Plus size={16} />
           <span className="hidden sm:inline">Új téma</span>
-        </button>
+        </Link>
 
         <IconButton icon={Bell} badge={12} />
         <IconButton icon={MessageSquare} />
 
-        {/* Profil */}
-        <button className="flex items-center gap-2 rounded-xl border border-line bg-card-2 py-1.5 pl-1.5 pr-2.5 transition-colors hover:bg-hover">
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-hover text-muted ring-1 ring-line">
-            <UserIcon size={15} />
-          </span>
-          <span className="hidden text-sm font-medium text-fg-soft sm:inline">{currentUser.username}</span>
-          {currentUser.pro && (
-            <span className="rounded-md bg-gradient-to-r from-accent-strong to-accent px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
-              Pro
-            </span>
-          )}
-          <ChevronDown size={15} className="text-muted" />
-        </button>
+        {/* Profil / auth */}
+        {loading ? (
+          <div className="h-10 w-28 animate-pulse rounded-xl border border-line bg-card-2" />
+        ) : user ? (
+          <ProfileMenu username={user.username ?? user.email ?? 'Profil'} onSignOut={signOut} />
+        ) : (
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accent-strong/15 px-3.5 py-2.5 text-sm font-semibold text-accent-soft transition-colors hover:bg-accent-strong/25"
+          >
+            <LogIn size={16} />
+            Bejelentkezés
+          </Link>
+        )}
       </div>
     </header>
+  );
+}
+
+function ProfileMenu({ username, onSignOut }: { username: string; onSignOut: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 rounded-xl border border-line bg-card-2 py-1.5 pl-1.5 pr-2.5 transition-colors hover:bg-hover"
+      >
+        <span className="grid h-7 w-7 place-items-center rounded-full bg-hover text-muted ring-1 ring-line">
+          <UserIcon size={15} />
+        </span>
+        <span className="hidden max-w-32 truncate text-sm font-medium text-fg-soft sm:inline">{username}</span>
+        <ChevronDown size={15} className={`text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 z-20 mt-1.5 w-52 overflow-hidden rounded-xl border border-line bg-card-2 p-1 shadow-2xl shadow-black/50">
+          <div className="border-b border-line px-3 py-2">
+            <p className="text-xs text-muted">Bejelentkezve mint</p>
+            <p className="truncate text-sm font-semibold text-fg">{username}</p>
+          </div>
+          <Link
+            href="/profile"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-fg-soft transition-colors hover:bg-hover"
+          >
+            <UserCircle size={16} className="text-muted" />
+            Profilom
+          </Link>
+          <button
+            onClick={onSignOut}
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-negative transition-colors hover:bg-hover"
+          >
+            <LogOut size={16} />
+            Kijelentkezés
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
