@@ -14,12 +14,12 @@ export function CollapsibleAIAnalysis({
   commentsCount,
   views,
 }: {
-  ai: AISummary;
+  ai?: AISummary;
   commentsCount: number;
   views: number;
 }) {
   const [open, setOpen] = useState(false);
-  const hasEnough = commentsCount >= MIN_COMMENTS_FOR_AI;
+  const hasAnalysis = commentsCount >= MIN_COMMENTS_FOR_AI && !!ai;
 
   return (
     <div className="mt-3 overflow-hidden rounded-2xl border border-line panel-gradient">
@@ -43,7 +43,7 @@ export function CollapsibleAIAnalysis({
             Részletes AI összefoglaló, kulcsérvek és közösségi hangulat elemzése
           </span>
         </span>
-        {open && hasEnough && (
+        {open && hasAnalysis && ai && (
           <span className="mr-1 hidden text-xs text-muted sm:block">Frissítve: {ai.updatedAgo}</span>
         )}
         <ChevronDown size={20} className={`shrink-0 text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -58,23 +58,24 @@ export function CollapsibleAIAnalysis({
             transition={{ duration: 0.25, ease: 'easeInOut' }}
           >
             <div className="border-t border-line p-4">
-              {!hasEnough ? (
+              {!hasAnalysis || !ai ? (
                 <div className="rounded-xl border border-line bg-bg-elevated/70 p-6 text-center">
                   <BrainCircuit size={28} className="mx-auto mb-3 text-accent-soft" />
                   <p className="mx-auto max-w-md text-sm leading-relaxed text-fg-soft">
                     Még kevés hozzászólás érkezett a teljes AI elemzéshez. Amint több vélemény
                     születik, a CrowdMind összefoglalja a közösség álláspontját.
                   </p>
+                  <p className="mt-2 text-xs text-muted">
+                    Az elemzés {MIN_COMMENTS_FOR_AI} hozzászólás felett készül el. Jelenleg: {commentsCount}.
+                  </p>
                 </div>
               ) : (
                 <>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    {/* Összegzés */}
                     <AIInsightCard title="Összegzés" className="md:col-span-1">
                       <p className="text-sm leading-relaxed text-fg-soft">{ai.short}</p>
                     </AIInsightCard>
 
-                    {/* Érzelmi hangulat */}
                     <AIInsightCard title="Érzelmi hangulat" className="md:col-span-2">
                       <div className="flex items-center gap-6">
                         <SentimentDonut {...ai.sentiment} />
@@ -86,22 +87,18 @@ export function CollapsibleAIAnalysis({
                       </div>
                     </AIInsightCard>
 
-                    {/* Fő témák */}
                     <AIInsightCard title="Fő témák">
                       <CheckList items={ai.themes} />
                     </AIInsightCard>
 
-                    {/* Top érvek */}
                     <AIInsightCard title="Top érvek">
                       <CheckList items={ai.argumentsFor} />
                     </AIInsightCard>
 
-                    {/* Közösségi aktivitás */}
                     <AIInsightCard title="Közösségi aktivitás">
                       <div className="space-y-3">
-                        <ActivityRow icon={Eye} value={`${formatCount(views)} megtekintés`} delta="+18%" />
+                        <ActivityRow icon={Eye} value={`${formatCount(views)} megtekintés`} />
                         <ActivityRow icon={MessagesSquare} value={`${formatCount(commentsCount)} hozzászólás`} />
-                        <Sparkline />
                       </div>
                     </AIInsightCard>
                   </div>
@@ -142,29 +139,5 @@ function ActivityRow({ icon: Icon, value, delta }: { icon: typeof Eye; value: st
         </span>
       )}
     </div>
-  );
-}
-
-function Sparkline() {
-  // Egyszerű, felfelé tartó terület-diagram (mock).
-  const pts = [6, 8, 7, 11, 9, 13, 12, 16, 15, 19, 18, 24];
-  const w = 240;
-  const h = 44;
-  const max = Math.max(...pts);
-  const step = w / (pts.length - 1);
-  const line = pts.map((p, i) => `${i * step},${h - (p / max) * (h - 4) - 2}`).join(' ');
-  const area = `0,${h} ${line} ${w},${h}`;
-
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="mt-1 h-11 w-full" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="spark" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--color-positive)" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="var(--color-positive)" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={area} fill="url(#spark)" />
-      <polyline points={line} fill="none" stroke="var(--color-positive)" strokeWidth="2" />
-    </svg>
   );
 }

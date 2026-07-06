@@ -1,21 +1,18 @@
 'use client';
 import { useState } from 'react';
-import { ChevronUp, ChevronDown, MessageCircle, Share2, MoreHorizontal, BadgeCheck } from 'lucide-react';
+import { ChevronUp, ChevronDown, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
 import { UserBadge } from './UserBadge';
-import { getUser } from '@/data/users';
 import { formatCount } from '@/lib/utils';
-import type { Comment, BadgeKind } from '@/data/types';
+import type { FeedComment } from '@/data/types';
 
-const BADGE_LABEL: Record<BadgeKind, string> = {
-  expert: 'Szakértő',
-  experience: 'Valódi tapasztalat',
-  trusted: 'Hiteles válaszadó',
-  top: 'Top kommentelő',
-  owner: 'Tulajdonos',
-  moderator: 'Moderátor',
-};
-
-export function CommentList({ comments }: { comments: Comment[] }) {
+export function CommentList({ comments }: { comments: FeedComment[] }) {
+  if (comments.length === 0) {
+    return (
+      <p className="mt-4 rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-muted">
+        Még nincs hozzászólás – legyél az első!
+      </p>
+    );
+  }
   return (
     <div className="mt-4 space-y-3">
       {comments.map((c) => (
@@ -25,21 +22,14 @@ export function CommentList({ comments }: { comments: Comment[] }) {
   );
 }
 
-function CommentRow({ comment }: { comment: Comment }) {
-  const user = getUser(comment.userId);
+function CommentRow({ comment }: { comment: FeedComment }) {
+  // A komment-kedvelés egyelőre csak helyi (nem mentődik) – vizuális visszajelzés.
   const [vote, setVote] = useState<0 | 1 | -1>(0);
-  const score = comment.votes + vote;
 
   return (
     <div className="rounded-xl border border-line bg-card-2/60 p-3.5">
       <div className="flex items-center gap-2">
-        <UserBadge user={user} size="sm" />
-        {comment.badge && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-accent-strong/15 px-2 py-0.5 text-[11px] font-medium text-accent-soft">
-            <BadgeCheck size={12} />
-            {BADGE_LABEL[comment.badge]}
-          </span>
-        )}
+        <UserBadge username={comment.username} size="sm" />
         <span className="text-xs text-muted">· {comment.ago}</span>
       </div>
 
@@ -54,8 +44,8 @@ function CommentRow({ comment }: { comment: Comment }) {
           >
             <ChevronUp size={16} />
           </button>
-          <span className={`min-w-8 text-center text-xs font-semibold ${vote === 1 ? 'text-positive' : vote === -1 ? 'text-negative' : 'text-fg-soft'}`}>
-            {formatCount(score)}
+          <span className={`min-w-6 text-center text-xs font-semibold ${vote === 1 ? 'text-positive' : vote === -1 ? 'text-negative' : 'text-fg-soft'}`}>
+            {formatCount(Math.max(0, vote))}
           </span>
           <button
             onClick={() => setVote((v) => (v === -1 ? 0 : -1))}
@@ -66,21 +56,18 @@ function CommentRow({ comment }: { comment: Comment }) {
           </button>
         </div>
 
-        <CommentAction icon={MessageCircle} label="Válasz" />
-        <CommentAction icon={Share2} label="Megosztás" />
+        <button className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors hover:bg-hover hover:text-fg-soft">
+          <MessageCircle size={14} />
+          Válasz
+        </button>
+        <button className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors hover:bg-hover hover:text-fg-soft">
+          <Share2 size={14} />
+          Megosztás
+        </button>
         <button className="grid h-7 w-7 place-items-center rounded-full transition-colors hover:bg-hover hover:text-fg-soft">
           <MoreHorizontal size={16} />
         </button>
       </div>
     </div>
-  );
-}
-
-function CommentAction({ icon: Icon, label }: { icon: typeof MessageCircle; label: string }) {
-  return (
-    <button className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors hover:bg-hover hover:text-fg-soft">
-      <Icon size={14} />
-      {label}
-    </button>
   );
 }

@@ -7,12 +7,10 @@ import { MediaGallery } from './MediaGallery';
 import { CommunitySnapshot } from './CommunitySnapshot';
 import { CollapsibleComments } from './CollapsibleComments';
 import { CollapsibleAIAnalysis } from './CollapsibleAIAnalysis';
-import { getUser } from '@/data/users';
 import { formatCount } from '@/lib/utils';
-import type { Post } from '@/data/types';
+import type { FeedPost } from '@/data/types';
 
-export function PostCard({ post }: { post: Post }) {
-  const author = getUser(post.authorId);
+export function PostCard({ post }: { post: FeedPost }) {
   const [saved, setSaved] = useState(false);
 
   return (
@@ -34,7 +32,7 @@ export function PostCard({ post }: { post: Post }) {
       {/* Meta sor + akciók */}
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         <PostTypeBadge type={post.type} />
-        <UserBadge user={author} size="sm" />
+        <UserBadge username={post.authorName} size="sm" />
         <span className="text-sm text-muted">· {post.ago}</span>
         <span className="inline-flex items-center gap-1 text-sm text-muted">
           · <Eye size={14} /> {formatCount(post.views)} megtekintés
@@ -55,21 +53,28 @@ export function PostCard({ post }: { post: Post }) {
       </div>
 
       {/* Szöveg */}
-      <div className="mt-4 space-y-3 text-[15px] leading-relaxed text-fg-soft">
-        {post.body.map((para, i) => (
-          <p key={i}>{para}</p>
-        ))}
-      </div>
+      {post.body.length > 0 && (
+        <div className="mt-4 space-y-3 text-[15px] leading-relaxed text-fg-soft">
+          {post.body.map((para, i) => (
+            <p key={i}>{para}</p>
+          ))}
+        </div>
+      )}
 
       {/* Média */}
       <MediaGallery images={post.media} />
 
-      {/* Közösség egy pillantásban */}
-      <CommunitySnapshot snapshot={post.snapshot} commentsCount={post.commentsCount} />
+      {/* Közösség egy pillantásban – valódi szavazással */}
+      <CommunitySnapshot
+        postId={post.id}
+        yesVotes={post.yesVotes}
+        noVotes={post.noVotes}
+        commentsCount={post.commentsCount}
+      />
 
       {/* Lenyitható panelek: előbb hozzászólások, alatta AI elemzés */}
-      <CollapsibleComments count={post.commentsCount} comments={post.comments} />
-      <CollapsibleAIAnalysis ai={post.ai} commentsCount={post.commentsCount} views={post.views} />
+      <CollapsibleComments postId={post.id} count={post.commentsCount} />
+      <CollapsibleAIAnalysis commentsCount={post.commentsCount} views={post.views} />
     </article>
   );
 }

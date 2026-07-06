@@ -1,5 +1,5 @@
 // ============================================================
-//  CrowdMind – közös típusdefiníciók a mock adatokhoz
+//  CrowdMind – közös típusdefiníciók
 // ============================================================
 
 export type PostType =
@@ -12,67 +12,40 @@ export type PostType =
   | 'media'         // Média poszt
   | 'appreciation'; // Elismerés / értékelés
 
-export type Sentiment = 'positive' | 'neutral' | 'negative';
-
-export type BadgeKind =
-  | 'expert'        // Szakértő
-  | 'experience'    // Valódi tapasztalat
-  | 'trusted'       // Hiteles válaszadó
-  | 'top'           // Top kommentelő
-  | 'owner'         // Tulajdonos
-  | 'moderator';    // Moderátor
-
-export interface User {
-  id: string;
-  username: string;
-  avatarUrl: string | null;
-  credibility: number;   // 0–100
-  badges: BadgeKind[];
-  pro?: boolean;
-}
-
-export interface Comment {
-  id: string;
-  userId: string;
-  ago: string;
-  body: string;
-  votes: number;
-  badge?: BadgeKind;     // kiemelt jelvény a komment mellett
-}
-
-export interface AISummary {
-  short: string;                 // rövid összefoglaló
-  detailed: string;              // részletes összefoglaló
-  sentiment: { positive: number; neutral: number; negative: number }; // %-ok, összeg 100
-  themes: string[];              // fő témák
-  argumentsFor: string[];        // fő érvek mellette
-  keywords: string[];            // leggyakoribb kulcsszavak
-  consensus: number;             // konszenzus erőssége 0–100
-  updatedAgo: string;
-}
-
-/** A CrowdMind ikonikus "Közösség egy pillantásban" blokk adatai. */
-export interface Snapshot {
-  for: number;        // Mellette %
-  against: number;    // Ellene %
-  uncertain: number;  // Bizonytalan %
-  votes: number;      // szavazatok száma
-}
-
-export interface Post {
-  id: string;
-  category: string[];   // pl. ["Film & Sorozat", "Star Wars"]
+/** Adatbázisból betöltött poszt, a feedben megjelenítendő formában. */
+export interface FeedPost {
+  id: number;
+  category: string[];   // pl. ["Autók", "Porsche"] – fő kategória + opcionális altéma
   title: string;
   type: PostType;
-  authorId: string;
-  ago: string;
+  authorName: string;
+  ago: string;          // relatív idő, pl. "5 órája"
   views: number;
   body: string[];       // bekezdések
-  media: string[];      // kép URL-ek (üres = nincs média)
+  media: string[];      // kép URL-ek
   commentsCount: number;
-  comments: Comment[];
-  ai: AISummary;
-  snapshot: Snapshot;
+  yesVotes: number;
+  noVotes: number;
+}
+
+/** Adatbázisból betöltött hozzászólás. */
+export interface FeedComment {
+  id: number;
+  username: string;
+  ago: string;
+  body: string;
+}
+
+/** AI-összefoglaló (egyelőre csak akkor, ha van elég hozzászólás). */
+export interface AISummary {
+  short: string;
+  detailed: string;
+  sentiment: { positive: number; neutral: number; negative: number };
+  themes: string[];
+  argumentsFor: string[];
+  keywords: string[];
+  consensus: number;
+  updatedAgo: string;
 }
 
 export interface Trend {
@@ -81,13 +54,13 @@ export interface Trend {
   title: string;
   shares: number;
   direction: 'up' | 'down';
-  color: string; // ikon háttér gradient-hez
+  color: string;
 }
 
 export interface CountryActivity {
-  code: string;      // emoji zászló
+  code: string;
   name: string;
-  change: number;    // % növekedés
-  x: number;         // térkép pozíció (0–100)
-  y: number;         // térkép pozíció (0–100)
+  change: number;
+  x: number;
+  y: number;
 }

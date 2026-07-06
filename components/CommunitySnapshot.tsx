@@ -1,18 +1,52 @@
+'use client';
+import { useState } from 'react';
+import Link from 'next/link';
 import { ThumbsUp, ThumbsDown, HelpCircle } from 'lucide-react';
+import { castVote } from '@/lib/postsDb';
 import { formatCount } from '@/lib/utils';
-import type { Snapshot } from '@/data/types';
 
 /**
  * "Közösség egy pillantásban" – a CrowdMind ikonikus eleme.
- * Mellette / Ellene / Bizonytalan arány egy sávon + szavazat- és hozzászólásszám.
+ * A Mellette / Ellene gombokkal valódi szavazat adható le (fejenként egy).
  */
 export function CommunitySnapshot({
-  snapshot,
+  postId,
+  yesVotes,
+  noVotes,
   commentsCount,
 }: {
-  snapshot: Snapshot;
+  postId: number;
+  yesVotes: number;
+  noVotes: number;
   commentsCount: number;
 }) {
+  const [yes, setYes] = useState(yesVotes);
+  const [no, setNo] = useState(noVotes);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; needsLogin?: boolean } | null>(null);
+
+  const total = yes + no;
+  const forPct = total > 0 ? Math.round((yes / total) * 100) : 0;
+  const againstPct = total > 0 ? 100 - forPct : 0;
+
+  async function vote(v: 'yes' | 'no') {
+    if (busy) return;
+    setBusy(true);
+    setMsg(null);
+    const res = await castVote(postId, v);
+    if (res.ok) {
+      if (v === 'yes') setYes((n) => n + 1); else setNo((n) => n + 1);
+      setMsg({ text: 'Szavazatod rögzítve. Köszönjük!' });
+    } else if (res.already) {
+      setMsg({ text: 'Erre a posztra már szavaztál.' });
+    } else if (res.needsLogin) {
+      setMsg({ text: 'A szavazáshoz jelentkezz be.', needsLogin: true });
+    } else {
+      setMsg({ text: res.error ?? 'Hiba a szavazáskor.' });
+    }
+    setBusy(false);
+  }
+
   return (
     <div className="mt-4 rounded-xl border border-line bg-bg-elevated/60 p-3.5">
       <div className="flex items-center justify-between">
@@ -20,42 +54,51 @@ export function CommunitySnapshot({
           Közösség egy pillantásban
         </span>
         <span className="text-xs text-muted">
-          {formatCount(snapshot.votes)} szavazat · {formatCount(commentsCount)} hozzászólás
+          {formatCount(total)} szavazat · {formatCount(commentsCount)} hozzászólás
         </span>
       </div>
 
       {/* Arány-sáv */}
       <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-line">
-        <div className="bg-positive" style={{ width: `${snapshot.for}%` }} />
-        <div className="bg-neutral" style={{ width: `${snapshot.uncertain}%` }} />
-        <div className="bg-negative" style={{ width: `${snapshot.against}%` }} />
+        <div className="bg-positive transition-all" style={{ width: `${forPct}%` }} />
+        <div className="bg-negative transition-all" style={{ width: `${againstPct}%` }} />
       </div>
 
       <div className="mt-2.5 flex items-center justify-between text-xs">
-        <Stat icon={ThumbsUp} color="text-positive" value={snapshot.for} label="Mellette" />
-        <Stat icon={HelpCircle} color="text-neutral" value={snapshot.uncertain} label="Bizonytalan" />
-        <Stat icon={ThumbsDown} color="text-negative" value={snapshot.against} label="Ellene" />
+        <button
+          onClick={() => void vote('yes')}
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-positive/10 disabled:opacity-60"
+        >
+          <ThumbsUp size={13} className="text-positive" />
+          <span className="font-semibold text-fg">{forPct}%</span>
+          <span className="text-muted">Mellette</span>
+        </button>
+        <span className="inline-flex items-center gap-1.5 px-2 py-1">
+          <HelpCircle size={13} className="text-neutral" />
+          <span className="text-muted">Kattints és szavazz</span>
+        </span>
+        <button
+          onClick={() => void vote('no')}
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-negative/10 disabled:opacity-60"
+        >
+          <ThumbsDown size={13} className="text-negative" />
+          <span className="font-semibold text-fg">{againstPct}%</span>
+          <span className="text-muted">Ellene</span>
+        </button>
       </div>
-    </div>
-  );
-}
 
-function Stat({
-  icon: Icon,
-  color,
-  value,
-  label,
-}: {
-  icon: typeof ThumbsUp;
-  color: string;
-  value: number;
-  label: string;
-}) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <Icon size={13} className={color} />
-      <span className="font-semibold text-fg">{value}%</span>
-      <span className="text-muted">{label}</span>
-    </span>
+      {msg && (
+        <p className="mt-2 text-center text-xs text-fg-soft">
+          {msg.text}{' '}
+          {msg.needsLogin && (
+            <Link href="/login" className="font-semibold text-accent-soft underline">
+              Bejelentkezés
+            </Link>
+          )}
+        </p>
+      )}
+    </div>
   );
 }

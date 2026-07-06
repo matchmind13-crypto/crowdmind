@@ -1,17 +1,16 @@
 import { User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { User } from '@/data/types';
 
 /**
- * Felhasználó megjelenítése: semleges anonim ikon (ha nincs profilkép) + felhasználónév.
+ * Felhasználó megjelenítése: semleges anonim ikon + felhasználónév.
  * Szándékosan NINCS r/ vagy u/ jelölés – csak a név, pl. "Csanad23".
  */
 export function UserBadge({
-  user,
+  username,
   size = 'md',
   className,
 }: {
-  user: User;
+  username: string;
   size?: 'sm' | 'md';
   className?: string;
 }) {
@@ -26,14 +25,9 @@ export function UserBadge({
           avatarSize,
         )}
       >
-        {user.avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={user.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
-        ) : (
-          <UserIcon size={iconSize} />
-        )}
+        <UserIcon size={iconSize} />
       </span>
-      <span className="text-sm font-medium text-fg-soft">{user.username}</span>
+      <span className="text-sm font-medium text-fg-soft">{username}</span>
     </span>
   );
 }
