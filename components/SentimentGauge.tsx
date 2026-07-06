@@ -7,7 +7,12 @@ const r = 78;
 
 function polar(angleDeg: number) {
   const rad = (angleDeg * Math.PI) / 180;
-  return { x: cx + r * Math.cos(rad), y: cy - r * Math.sin(rad) };
+  // Fix tizedesjegyre kerekítünk, hogy a szerver- és kliens-render bitre egyezzen
+  // (különben React hydration-eltérést jelez a lebegőpontos különbség miatt).
+  return {
+    x: Math.round((cx + r * Math.cos(rad)) * 100) / 100,
+    y: Math.round((cy - r * Math.sin(rad)) * 100) / 100,
+  };
 }
 
 /** Ívszakasz path 180° (bal) → 0° (jobb) tartományban. */

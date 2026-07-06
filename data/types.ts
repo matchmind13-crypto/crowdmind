@@ -18,8 +18,10 @@ export interface FeedPost {
   category: string[];   // pl. ["Autók", "Porsche"] – fő kategória + opcionális altéma
   title: string;
   type: PostType;
+  authorId: string | null;
   authorName: string;
   ago: string;          // relatív idő, pl. "5 órája"
+  createdAt: string;    // ISO – csoportosításhoz (pl. Friss oldal)
   views: number;
   body: string[];       // bekezdések
   media: string[];      // kép URL-ek
@@ -34,6 +36,15 @@ export interface FeedComment {
   username: string;
   ago: string;
   body: string;
+}
+
+/** Valódi értesítés a notifications táblából. */
+export interface NotificationItem {
+  id: number;
+  message: string;
+  ago: string;
+  read: boolean;
+  postId: number | null;
 }
 
 /** AI-összefoglaló (egyelőre csak akkor, ha van elég hozzászólás). */

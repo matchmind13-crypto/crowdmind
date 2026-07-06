@@ -1,3 +1,8 @@
+// ============================================================
+//  FIGYELEM – MOCK ADATOK: ez a fájl dekorációs demó-adatokat tartalmaz
+//  (jobb oldali Trendek panel, közösségi térkép, hangulatindex, kedvenc témák).
+//  KÉSŐBB CSERÉLENDŐ valódi, számított adatokra (pl. poszt-statisztikákból).
+// ============================================================
 import type { Trend, CountryActivity } from './types';
 
 export const trends: Trend[] = [

@@ -3,9 +3,11 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Plus, Bell, MessageSquare, ChevronDown, User as UserIcon, LogOut, UserCircle, LogIn } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
+import { useUnreadCount } from '@/lib/useUnread';
 
 export function Topbar() {
   const { user, loading, signOut } = useAuth();
+  const unread = useUnreadCount();
 
   return (
     <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-line bg-bg/80 px-5 py-3 backdrop-blur-xl">
@@ -30,8 +32,22 @@ export function Topbar() {
           <span className="hidden sm:inline">Új téma</span>
         </Link>
 
-        <IconButton icon={Bell} badge={12} />
-        <IconButton icon={MessageSquare} />
+        {/* Harang – a valódi olvasatlan értesítésszámmal, az Értesítések oldalra visz */}
+        <Link
+          href="/notifications"
+          className="relative grid h-10 w-10 place-items-center rounded-xl border border-line bg-card-2 text-fg-soft transition-colors hover:bg-hover"
+        >
+          <Bell size={18} />
+          {unread > 0 && (
+            <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-negative px-1 text-[10px] font-bold text-white">
+              {unread}
+            </span>
+          )}
+        </Link>
+
+        <button className="relative grid h-10 w-10 place-items-center rounded-xl border border-line bg-card-2 text-fg-soft transition-colors hover:bg-hover">
+          <MessageSquare size={18} />
+        </button>
 
         {/* Profil / auth */}
         {loading ? (
@@ -101,18 +117,5 @@ function ProfileMenu({ username, onSignOut }: { username: string; onSignOut: () 
         </div>
       )}
     </div>
-  );
-}
-
-function IconButton({ icon: Icon, badge }: { icon: typeof Bell; badge?: number }) {
-  return (
-    <button className="relative grid h-10 w-10 place-items-center rounded-xl border border-line bg-card-2 text-fg-soft transition-colors hover:bg-hover">
-      <Icon size={18} />
-      {badge && (
-        <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-negative px-1 text-[10px] font-bold text-white">
-          {badge}
-        </span>
-      )}
-    </button>
   );
 }

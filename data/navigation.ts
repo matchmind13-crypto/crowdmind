@@ -1,39 +1,26 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   Home, Compass, TrendingUp, Clock, Users, Bookmark, Bell,
-  Trophy, Circle, Cpu, Car, Wallet, HeartPulse, Plane, Clapperboard, MoreHorizontal,
   Brain, GitCompareArrows, Gauge, Map,
 } from 'lucide-react';
 
 export interface NavItem {
   label: string;
+  href: string;
   icon: LucideIcon;
-  badge?: number;
 }
 
 export const mainNav: NavItem[] = [
-  { label: 'Kezdőlap', icon: Home },
-  { label: 'Felfedezés', icon: Compass },
-  { label: 'Trendek', icon: TrendingUp },
-  { label: 'Friss', icon: Clock },
-  { label: 'Követett', icon: Users },
-  { label: 'Mentett', icon: Bookmark },
-  { label: 'Értesítések', icon: Bell, badge: 12 },
+  { label: 'Kezdőlap', href: '/', icon: Home },
+  { label: 'Felfedezés', href: '/discover', icon: Compass },
+  { label: 'Trendek', href: '/trending', icon: TrendingUp },
+  { label: 'Friss', href: '/fresh', icon: Clock },
+  { label: 'Követett', href: '/following', icon: Users },
+  { label: 'Mentett', href: '/saved', icon: Bookmark },
+  { label: 'Értesítések', href: '/notifications', icon: Bell },
 ];
 
-export const topicNav: NavItem[] = [
-  { label: 'Sport', icon: Trophy },
-  { label: 'Futball', icon: Circle },
-  { label: 'Technológia', icon: Cpu },
-  { label: 'Autók', icon: Car },
-  { label: 'Pénzügy', icon: Wallet },
-  { label: 'Egészség', icon: HeartPulse },
-  { label: 'Utazás', icon: Plane },
-  { label: 'Film & Sorozat', icon: Clapperboard },
-  { label: 'Továbbiak', icon: MoreHorizontal },
-];
-
-export const toolNav: NavItem[] = [
+export const toolNav: { label: string; icon: LucideIcon }[] = [
   { label: 'AI elemző', icon: Brain },
   { label: 'Összehasonlító', icon: GitCompareArrows },
   { label: 'Hangulatindex', icon: Gauge },

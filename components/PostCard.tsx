@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronRight, Bookmark, Share2, MoreHorizontal, Eye, Layers } from 'lucide-react';
+import { isSaved, toggleSaved } from '@/lib/savedPosts';
 import { UserBadge } from './UserBadge';
 import { PostTypeBadge } from './PostTypeBadge';
 import { MediaGallery } from './MediaGallery';
@@ -11,7 +12,9 @@ import { formatCount } from '@/lib/utils';
 import type { FeedPost } from '@/data/types';
 
 export function PostCard({ post }: { post: FeedPost }) {
+  // Mentés állapot – jelenleg localStorage-alapú (lásd lib/savedPosts.ts megjegyzését).
   const [saved, setSaved] = useState(false);
+  useEffect(() => { setSaved(isSaved(post.id)); }, [post.id]);
 
   return (
     <article className="rounded-2xl border border-line bg-card p-5 sm:p-6">
@@ -43,7 +46,7 @@ export function PostCard({ post }: { post: FeedPost }) {
             icon={Bookmark}
             label="Mentés"
             active={saved}
-            onClick={() => setSaved((s) => !s)}
+            onClick={() => setSaved(toggleSaved(post.id))}
           />
           <ActionButton icon={Share2} label="Megosztás" />
           <button className="grid h-9 w-9 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-hover hover:text-fg-soft">

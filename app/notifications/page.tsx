@@ -1,78 +1,157 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Bell, MessagesSquare, ThumbsUp, CheckCheck, LogIn, FileText } from 'lucide-react';
+import { AppShell } from '@/components/AppShell';
+import { PageHeader } from '@/components/PageHeader';
+import { PanelCard, PanelHeader } from '@/components/PanelCard';
+import { StatCard } from '@/components/StatCard';
+import { fetchNotifications, markAllNotificationsRead, fetchMyEngagement } from '@/lib/postsDb';
+import type { NotificationItem } from '@/data/types';
 
-export default function Notifications() {
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const bg = '#0a0a0f';
-  const card = '#16161f';
-  const border = '#2a2a3a';
-  const purple = '#7c3aed';
-  const purpleLight = '#8b5cf6';
-  const textPrimary = '#f0f0ff';
-  const textSecondary = '#9090b0';
-  const textMuted = '#55556a';
+/**
+ * Értesítések – VALÓDI adat a notifications táblából.
+ * Értesítés akkor keletkezik, amikor valaki hozzászól vagy szavaz a témádra
+ * (lásd lib/postsDb.ts: notifyPostOwner).
+ */
+export default function NotificationsPage() {
+  const [items, setItems] = useState<NotificationItem[] | null | 'anon'>(null);
+  const [engagement, setEngagement] = useState<{ myPosts: number; commentsReceived: number; votesReceived: number } | null>(null);
+  const [marking, setMarking] = useState(false);
 
   useEffect(() => {
-    loadNotifications();
+    fetchNotifications()
+      .then((n) => setItems(n === null ? 'anon' : n))
+      .catch(() => setItems([]));
+    fetchMyEngagement().then(setEngagement).catch(() => {});
   }, []);
 
-  async function loadNotifications() {
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (data) setNotifications(data);
-    setLoading(false);
+  async function markAll() {
+    if (marking || !Array.isArray(items)) return;
+    setMarking(true);
+    await markAllNotificationsRead();
+    setItems(items.map((n) => ({ ...n, read: true })));
+    setMarking(false);
   }
 
-  async function markAllRead() {
-    await (supabase.from('notifications') as any).update({ read: true }).eq('read', false);
-    loadNotifications();
-  }
+  const unreadCount = Array.isArray(items) ? items.filter((n) => !n.read).length : 0;
 
   return (
-    <div style={{ background: bg, minHeight: '100vh', color: textPrimary, fontFamily: '-apple-system, BlinkMacSystemFont, Inter, sans-serif' }}>
-      <div style={{ background: bg, borderBottom: `1px solid ${border}`, padding: '12px 16px', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ maxWidth: '480px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button onClick={() => window.location.href = '/'} style={{ background: card, border: `1px solid ${border}`, borderRadius: '10px', color: textPrimary, width: '36px', height: '36px', cursor: 'pointer', fontSize: '16px' }}>←</button>
-            <div style={{ fontSize: '18px', fontWeight: 800 }}>Értesítések</div>
-          </div>
-          <button onClick={markAllRead} style={{ background: 'transparent', border: `1px solid ${border}`, borderRadius: '10px', color: purpleLight, padding: '6px 12px', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>Mind olvasott</button>
+    <AppShell
+      right={
+        <>
+          <PanelCard>
+            <PanelHeader title="Aktivitásod" />
+            {engagement ? (
+              <div className="space-y-2.5">
+                <StatCard icon={FileText} value={engagement.myPosts} label="Témád összesen" />
+                <StatCard icon={MessagesSquare} value={engagement.commentsReceived} label="Kapott hozzászólás" />
+                <StatCard icon={ThumbsUp} value={engagement.votesReceived} label="Kapott szavazat" />
+              </div>
+            ) : (
+              <p className="px-1 text-sm text-muted">Jelentkezz be az aktivitásod megtekintéséhez.</p>
+            )}
+          </PanelCard>
+
+          <PanelCard>
+            <PanelHeader title="Miről értesítünk?" />
+            <ul className="space-y-2 px-1 text-sm text-muted">
+              <li className="flex gap-2">
+                <MessagesSquare size={15} className="mt-0.5 shrink-0 text-accent-soft" />
+                Ha valaki hozzászól a témádhoz
+              </li>
+              <li className="flex gap-2">
+                <ThumbsUp size={15} className="mt-0.5 shrink-0 text-accent-soft" />
+                Ha új szavazat érkezik a témádra
+              </li>
+            </ul>
+          </PanelCard>
+        </>
+      }
+    >
+      <PageHeader
+        icon={Bell}
+        title="Értesítések"
+        subtitle="Ami a témáid körül történt: hozzászólások és szavazatok"
+        action={
+          Array.isArray(items) && unreadCount > 0 ? (
+            <button
+              onClick={() => void markAll()}
+              disabled={marking}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-line bg-card-2 px-3.5 py-2 text-sm font-medium text-fg-soft transition-colors hover:bg-hover disabled:opacity-50"
+            >
+              <CheckCheck size={15} className="text-accent-soft" />
+              Mind olvasott
+            </button>
+          ) : undefined
+        }
+      />
+
+      {items === null ? (
+        <>
+          <div className="h-20 animate-pulse rounded-2xl border border-line bg-card" />
+          <div className="h-20 animate-pulse rounded-2xl border border-line bg-card" />
+          <div className="h-20 animate-pulse rounded-2xl border border-line bg-card" />
+        </>
+      ) : items === 'anon' ? (
+        <div className="rounded-2xl border border-line bg-card p-10 text-center">
+          <LogIn size={28} className="mx-auto mb-3 text-accent-soft" />
+          <p className="text-sm text-fg-soft">Az értesítéseidhez jelentkezz be.</p>
+          <Link
+            href="/login"
+            className="mt-4 inline-block rounded-xl bg-accent-strong px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent"
+          >
+            Bejelentkezés
+          </Link>
         </div>
-      </div>
-
-      <div style={{ padding: '16px', maxWidth: '480px', margin: '0 auto', paddingBottom: '100px' }}>
-        {loading && <div style={{ textAlign: 'center', color: textSecondary, padding: '40px' }}>Betöltés...</div>}
-        {!loading && notifications.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔔</div>
-            <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>Nincsenek értesítések</div>
-            <div style={{ fontSize: '14px', color: textSecondary }}>Ha valaki kommentel a posztodra, itt jelenik meg.</div>
+      ) : items.length === 0 ? (
+        <div className="rounded-2xl border border-line bg-card p-10 text-center">
+          <Bell size={28} className="mx-auto mb-3 text-muted" />
+          <p className="text-sm text-fg-soft">Még nincs értesítésed.</p>
+          <p className="mt-1 text-xs text-muted">
+            Amint valaki hozzászól vagy szavaz a témáidra, itt fogod látni.
+          </p>
+          <Link
+            href="/create"
+            className="mt-4 inline-block rounded-xl bg-accent-strong px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent"
+          >
+            Indíts egy témát
+          </Link>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl border border-line bg-card">
+          <div className="divide-y divide-line">
+            {items.map((n) => {
+              const Icon = n.message.includes('hozzászólt')
+                ? MessagesSquare
+                : n.message.includes('szavazat')
+                  ? ThumbsUp
+                  : Bell;
+              const inner = (
+                <div className={`flex items-start gap-3.5 px-5 py-4 transition-colors hover:bg-hover/40 ${n.read ? '' : 'bg-accent-strong/5'}`}>
+                  <span className={`mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl ${n.read ? 'bg-card-2 text-muted' : 'bg-accent-strong/20 text-accent-soft'}`}>
+                    <Icon size={16} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm leading-relaxed ${n.read ? 'text-fg-soft' : 'font-medium text-fg'}`}>
+                      {n.message}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted">{n.ago}</p>
+                  </div>
+                  {!n.read && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-accent" />}
+                </div>
+              );
+              return n.postId ? (
+                <Link key={n.id} href={`/post/${n.postId}`} className="block">
+                  {inner}
+                </Link>
+              ) : (
+                <div key={n.id}>{inner}</div>
+              );
+            })}
           </div>
-        )}
-        {notifications.map(n => (
-          <div key={n.id} style={{ background: n.read ? card : 'rgba(124,58,237,0.1)', border: `1px solid ${n.read ? border : 'rgba(124,58,237,0.3)'}`, borderRadius: '12px', padding: '14px', marginBottom: '8px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-            <div style={{ fontSize: '24px' }}>🔔</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '14px', color: textPrimary, marginBottom: '4px' }}>{n.message}</div>
-              <div style={{ fontSize: '12px', color: textMuted }}>{new Date(n.created_at).toLocaleDateString('hu-HU')}</div>
-            </div>
-            {!n.read && <div style={{ width: '8px', height: '8px', background: purpleLight, borderRadius: '50%', marginTop: '4px' }} />}
-          </div>
-        ))}
-      </div>
-
-      <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', background: bg, borderTop: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '10px 8px 24px', zIndex: 100 }}>
-        <button onClick={() => window.location.href = '/'} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', background: 'none', border: 'none', color: textMuted, cursor: 'pointer', fontSize: '10px', fontWeight: 600, padding: '4px 12px' }}><span style={{ fontSize: '20px' }}>🏠</span>Főoldal</button>
-        <button onClick={() => window.location.href = '/trending'} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', background: 'none', border: 'none', color: textMuted, cursor: 'pointer', fontSize: '10px', fontWeight: 600, padding: '4px 12px' }}><span style={{ fontSize: '20px' }}>🔥</span>Trending</button>
-        <button style={{ width: '48px', height: '48px', background: `linear-gradient(135deg, ${purple}, ${purpleLight})`, borderRadius: '50%', border: 'none', color: 'white', fontSize: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(124,58,237,0.5)', marginTop: '-8px' }} onClick={() => window.location.href = '/create'}>+</button>
-        <button onClick={() => window.location.href = '/notifications'} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', background: 'none', border: 'none', color: purpleLight, cursor: 'pointer', fontSize: '10px', fontWeight: 600, padding: '4px 12px' }}><span style={{ fontSize: '20px' }}>🔔</span>Értesítések</button>
-        <button onClick={() => window.location.href = '/profile'} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', background: 'none', border: 'none', color: textMuted, cursor: 'pointer', fontSize: '10px', fontWeight: 600, padding: '4px 12px' }}><span style={{ fontSize: '20px' }}>👤</span>Profil</button>
-      </div>
-    </div>
+        </div>
+      )}
+    </AppShell>
   );
 }

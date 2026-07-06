@@ -1,34 +1,57 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Sparkles, Moon, Rss, Pencil, LogIn } from 'lucide-react';
-import { mainNav, toolNav, type NavItem } from '@/data/navigation';
+import { mainNav, toolNav } from '@/data/navigation';
 import { cn } from '@/lib/utils';
+import { useUnreadCount } from '@/lib/useUnread';
 import { usePreferences } from './PreferencesProvider';
 import { CategoryPickerModal } from './CategoryPickerModal';
 
 export function Sidebar() {
-  const [active, setActive] = useState('Kezdőlap');
+  const pathname = usePathname();
   const [dark, setDark] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
   const { userId, preferred, loading } = usePreferences();
+  const unread = useUnreadCount();
 
   return (
     <aside className="flex h-full flex-col gap-6 overflow-y-auto px-3 py-5">
       {/* Logó */}
-      <div className="flex items-center gap-2 px-2">
+      <Link href="/" className="flex items-center gap-2 px-2">
         <BrainLogo />
         <span className="text-lg font-extrabold tracking-tight">
           <span className="text-fg">CROWD</span>
           <span className="text-accent">MIND</span>
         </span>
-      </div>
+      </Link>
 
-      {/* Fő menü */}
+      {/* Fő menü – minden pont saját aloldalra visz */}
       <nav className="space-y-1">
-        {mainNav.map((item) => (
-          <NavButton key={item.label} item={item} active={active === item.label} onClick={() => setActive(item.label)} />
-        ))}
+        {mainNav.map((item) => {
+          const Icon = item.icon;
+          const active = pathname === item.href;
+          const badge = item.href === '/notifications' && unread > 0 ? unread : undefined;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
+                active ? 'bg-accent-strong/15 text-fg ring-1 ring-accent/20' : 'text-fg-soft hover:bg-hover',
+              )}
+            >
+              <Icon size={18} className={active ? 'text-accent-soft' : 'text-muted'} />
+              <span className="flex-1 text-left">{item.label}</span>
+              {badge && (
+                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent-strong px-1 text-[11px] font-semibold text-white">
+                  {badge}
+                </span>
+              )}
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Egyéni hírfolyam */}
@@ -79,12 +102,24 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Eszközök */}
-      <Section title="Eszközök">
-        {toolNav.map((item) => (
-          <NavButton key={item.label} item={item} active={active === item.label} onClick={() => setActive(item.label)} />
-        ))}
-      </Section>
+      {/* Eszközök (későbbi funkciók) */}
+      <div>
+        <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted">Eszközök</h3>
+        <div className="space-y-1">
+          {toolNav.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.label}
+                className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium text-fg-soft transition-colors hover:bg-hover"
+              >
+                <Icon size={18} className="text-muted" />
+                <span className="flex-1 text-left">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* AI asszisztens kártya */}
       <div className="mt-auto rounded-2xl border border-accent/25 bg-gradient-to-b from-accent-strong/15 to-transparent p-4">
@@ -121,36 +156,6 @@ export function Sidebar() {
 
       {pickerOpen && <CategoryPickerModal onClose={() => setPickerOpen(false)} />}
     </aside>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted">{title}</h3>
-      <div className="space-y-1">{children}</div>
-    </div>
-  );
-}
-
-function NavButton({ item, active, onClick }: { item: NavItem; active: boolean; onClick: () => void }) {
-  const Icon = item.icon;
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
-        active ? 'bg-accent-strong/15 text-fg ring-1 ring-accent/20' : 'text-fg-soft hover:bg-hover',
-      )}
-    >
-      <Icon size={18} className={active ? 'text-accent-soft' : 'text-muted'} />
-      <span className="flex-1 text-left">{item.label}</span>
-      {item.badge && (
-        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent-strong px-1 text-[11px] font-semibold text-white">
-          {item.badge}
-        </span>
-      )}
-    </button>
   );
 }
 
