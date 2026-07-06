@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { getUserIdFromRequest } from '@/lib/serverAuth';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 // ============================================================
 //  VALÓDI AI-ELEMZÉS – Claude Opus 4.8
@@ -62,6 +64,15 @@ export async function POST(request: Request) {
   }
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: 'Hiányzó ANTHROPIC_API_KEY' }, { status: 500 });
+  }
+
+  // Védelem: csak bejelentkezve + felhasználónként max 5 elemzés / 5 perc.
+  const userId = await getUserIdFromRequest(request);
+  if (!userId) {
+    return NextResponse.json({ error: 'Az AI elemzéshez jelentkezz be.' }, { status: 401 });
+  }
+  if (!checkRateLimit(`summarize:${userId}`, 5, 5 * 60 * 1000)) {
+    return NextResponse.json({ error: 'Túl sok elemzést kértél. Várj pár percet, és próbáld újra.' }, { status: 429 });
   }
 
   const body = await request.json().catch(() => null);

@@ -4,6 +4,7 @@ import { Sparkles, Send, Loader2, User as UserIcon, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { PanelCard, PanelHeader } from '@/components/PanelCard';
+import { authedFetch } from '@/lib/authedFetch';
 
 interface ChatMsg {
   role: 'user' | 'assistant';
@@ -41,7 +42,7 @@ export default function AssistantPage() {
     setInput('');
     setBusy(true);
     try {
-      const res = await fetch('/api/assistant', {
+      const res = await authedFetch('/api/assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: next }),

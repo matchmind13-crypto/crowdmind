@@ -4,24 +4,49 @@ import Link from 'next/link';
 import { Search, Plus, Bell, MessageSquare, ChevronDown, User as UserIcon, LogOut, UserCircle, LogIn } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { useUnreadCount } from '@/lib/useUnread';
+import { SearchOverlay } from './SearchOverlay';
 
 export function Topbar() {
   const { user, loading, signOut } = useAuth();
   const unread = useUnreadCount();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // ⌘K / Ctrl+K megnyitja a keresőt
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-line bg-bg/80 px-5 py-3 backdrop-blur-xl">
-      {/* Kereső */}
-      <div className="relative hidden max-w-xl flex-1 md:block">
+      {/* Kereső – kattintásra nyílik az overlay */}
+      <button
+        onClick={() => setSearchOpen(true)}
+        className="relative hidden max-w-xl flex-1 md:block"
+      >
         <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-        <input
-          placeholder="Keresés témákra, kérdésekre, véleményekre…"
-          className="w-full rounded-xl border border-line bg-card-2 py-2.5 pl-10 pr-16 text-sm text-fg placeholder:text-muted focus:border-accent/40 focus:outline-none focus:ring-2 focus:ring-accent/20"
-        />
+        <span className="block w-full rounded-xl border border-line bg-card-2 py-2.5 pl-10 pr-16 text-left text-sm text-muted transition-colors hover:border-accent/40">
+          Keresés témákra, kérdésekre, véleményekre…
+        </span>
         <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded-md border border-line bg-bg-elevated px-1.5 py-0.5 text-[11px] font-medium text-muted lg:flex">
           ⌘ K
         </kbd>
-      </div>
+      </button>
+
+      {/* Mobil kereső-ikon */}
+      <button
+        onClick={() => setSearchOpen(true)}
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-line bg-card-2 text-fg-soft transition-colors hover:bg-hover md:hidden"
+        aria-label="Keresés"
+      >
+        <Search size={18} />
+      </button>
 
       <div className="ml-auto flex items-center gap-2.5">
         <Link
@@ -64,6 +89,8 @@ export function Topbar() {
           </Link>
         )}
       </div>
+
+      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
     </header>
   );
 }

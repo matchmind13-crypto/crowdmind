@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { MobileNav } from './MobileNav';
 import { PreferencesProvider } from './PreferencesProvider';
 
 /**
@@ -27,7 +28,7 @@ export function AppShell({
         <div className="lg:pl-60">
           <Topbar />
 
-          <div className="mx-auto flex max-w-[1380px] justify-center gap-6 px-4 py-6 sm:px-6">
+          <div className="mx-auto flex max-w-[1380px] justify-center gap-6 px-4 pb-24 pt-6 sm:px-6 lg:pb-6">
             <main className={`w-full space-y-5 ${wide && !right ? 'max-w-[1240px]' : 'max-w-[880px]'}`}>
               {children}
             </main>
@@ -39,6 +40,9 @@ export function AppShell({
             )}
           </div>
         </div>
+
+        {/* Mobil: alsó navigáció + benyíló menü */}
+        <MobileNav />
       </div>
     </PreferencesProvider>
   );

@@ -1,25 +1,64 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BrainCircuit, ChevronDown, ArrowRight, MessagesSquare, Eye, TrendingUp } from 'lucide-react';
+import { BrainCircuit, ChevronDown, Sparkles, Loader2, Hash, Scale, MessagesSquare, Eye } from 'lucide-react';
 import { AIInsightCard, CheckList } from './AIInsightCard';
 import { SentimentDonut } from './SentimentDonut';
+import { authedFetch } from '@/lib/authedFetch';
 import { formatCount } from '@/lib/utils';
-import type { AISummary } from '@/data/types';
 
-const MIN_COMMENTS_FOR_AI = 20;
+interface Analysis {
+  osszegzes: string;
+  reszletes: string;
+  fo_allaspontok: string[];
+  vitapontok: string[];
+  hangulat: { pozitiv: number; semleges: number; negativ: number };
+  kulcsszavak: string[];
+  konszenzus: number;
+}
 
+/**
+ * Lenyitható AI-elemzés a posztok alatt – VALÓDI Claude-elemzéssel.
+ * A lenyitás ingyenes; maga az elemzés gombnyomásra készül el
+ * (bejelentkezéshez kötött, hogy a kereted védve legyen).
+ */
 export function CollapsibleAIAnalysis({
-  ai,
+  postId,
   commentsCount,
   views,
 }: {
-  ai?: AISummary;
+  postId: number;
   commentsCount: number;
   views: number;
 }) {
   const [open, setOpen] = useState(false);
-  const hasAnalysis = commentsCount >= MIN_COMMENTS_FOR_AI && !!ai;
+  const [loading, setLoading] = useState(false);
+  const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [error, setError] = useState<{ msg: string; needsLogin?: boolean } | null>(null);
+
+  async function analyze() {
+    if (loading || analysis) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await authedFetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError({ msg: data.error ?? 'Az elemzés nem sikerült', needsLogin: res.status === 401 });
+        setLoading(false);
+        return;
+      }
+      setAnalysis(data.analysis);
+    } catch {
+      setError({ msg: 'Az elemzés nem sikerült. Próbáld újra!' });
+    }
+    setLoading(false);
+  }
 
   return (
     <div className="mt-3 overflow-hidden rounded-2xl border border-line panel-gradient">
@@ -36,16 +75,13 @@ export function CollapsibleAIAnalysis({
               {open ? 'AI elemzés' : 'AI elemzés megnyitása'}
             </span>
             <span className="rounded-md bg-accent-strong/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-soft">
-              Béta
+              Claude
             </span>
           </span>
           <span className="block truncate text-sm text-muted">
             Részletes AI összefoglaló, kulcsérvek és közösségi hangulat elemzése
           </span>
         </span>
-        {open && hasAnalysis && ai && (
-          <span className="mr-1 hidden text-xs text-muted sm:block">Frissítve: {ai.updatedAgo}</span>
-        )}
         <ChevronDown size={20} className={`shrink-0 text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
@@ -58,86 +94,116 @@ export function CollapsibleAIAnalysis({
             transition={{ duration: 0.25, ease: 'easeInOut' }}
           >
             <div className="border-t border-line p-4">
-              {!hasAnalysis || !ai ? (
+              {!analysis && !loading && (
                 <div className="rounded-xl border border-line bg-bg-elevated/70 p-6 text-center">
                   <BrainCircuit size={28} className="mx-auto mb-3 text-accent-soft" />
                   <p className="mx-auto max-w-md text-sm leading-relaxed text-fg-soft">
-                    Még kevés hozzászólás érkezett a teljes AI elemzéshez. Amint több vélemény
-                    születik, a CrowdMind összefoglalja a közösség álláspontját.
+                    Az AI a téma összes hozzászólását és szavazatát elolvassa, majd összefoglalja
+                    a közösség álláspontját.
                   </p>
-                  <p className="mt-2 text-xs text-muted">
-                    Az elemzés {MIN_COMMENTS_FOR_AI} hozzászólás felett készül el. Jelenleg: {commentsCount}.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <AIInsightCard title="Összegzés" className="md:col-span-1">
-                      <p className="text-sm leading-relaxed text-fg-soft">{ai.short}</p>
-                    </AIInsightCard>
-
-                    <AIInsightCard title="Érzelmi hangulat" className="md:col-span-2">
-                      <div className="flex items-center gap-6">
-                        <SentimentDonut {...ai.sentiment} />
-                        <div className="space-y-2.5">
-                          <LegendRow color="var(--color-positive)" value={ai.sentiment.positive} label="Pozitív" />
-                          <LegendRow color="var(--color-neutral)" value={ai.sentiment.neutral} label="Semleges" />
-                          <LegendRow color="var(--color-negative)" value={ai.sentiment.negative} label="Negatív" />
-                        </div>
-                      </div>
-                    </AIInsightCard>
-
-                    <AIInsightCard title="Fő témák">
-                      <CheckList items={ai.themes} />
-                    </AIInsightCard>
-
-                    <AIInsightCard title="Top érvek">
-                      <CheckList items={ai.argumentsFor} />
-                    </AIInsightCard>
-
-                    <AIInsightCard title="Közösségi aktivitás">
-                      <div className="space-y-3">
-                        <ActivityRow icon={Eye} value={`${formatCount(views)} megtekintés`} />
-                        <ActivityRow icon={MessagesSquare} value={`${formatCount(commentsCount)} hozzászólás`} />
-                      </div>
-                    </AIInsightCard>
-                  </div>
-
-                  <button className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-accent-strong to-accent py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90">
-                    Teljes elemzés megnyitása
-                    <ArrowRight size={16} />
+                  <button
+                    onClick={() => void analyze()}
+                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-accent-strong to-accent px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  >
+                    <Sparkles size={15} />
+                    Elemzés készítése (10–30 mp)
                   </button>
-                </>
+                  {error && (
+                    <p className="mt-3 text-sm text-negative">
+                      {error.msg}{' '}
+                      {error.needsLogin && (
+                        <Link href="/login" className="font-semibold text-accent-soft underline">
+                          Bejelentkezés
+                        </Link>
+                      )}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {loading && (
+                <div className="rounded-xl border border-line bg-bg-elevated/70 p-6 text-center">
+                  <Loader2 size={26} className="mx-auto mb-3 animate-spin text-accent-soft" />
+                  <p className="text-sm text-fg-soft">Az AI épp olvassa a hozzászólásokat…</p>
+                </div>
+              )}
+
+              {analysis && (
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <AIInsightCard title="Összegzés" className="md:col-span-1">
+                    <p className="text-sm leading-relaxed text-fg-soft">{analysis.osszegzes}</p>
+                  </AIInsightCard>
+
+                  <AIInsightCard title="Érzelmi hangulat" className="md:col-span-2">
+                    <div className="flex items-center gap-6">
+                      <SentimentDonut
+                        positive={analysis.hangulat.pozitiv}
+                        neutral={analysis.hangulat.semleges}
+                        negative={analysis.hangulat.negativ}
+                      />
+                      <div className="space-y-2.5 text-sm">
+                        <p><span className="font-semibold text-fg">{analysis.hangulat.pozitiv}%</span> <span className="text-muted">Pozitív</span></p>
+                        <p><span className="font-semibold text-fg">{analysis.hangulat.semleges}%</span> <span className="text-muted">Semleges</span></p>
+                        <p><span className="font-semibold text-fg">{analysis.hangulat.negativ}%</span> <span className="text-muted">Negatív</span></p>
+                      </div>
+                    </div>
+                  </AIInsightCard>
+
+                  <AIInsightCard title="Fő álláspontok" className="md:col-span-2">
+                    <CheckList items={analysis.fo_allaspontok} />
+                  </AIInsightCard>
+
+                  <AIInsightCard title="Konszenzus">
+                    <div className="flex items-center gap-2">
+                      <Scale size={16} className="text-accent-soft" />
+                      <span className="text-2xl font-bold text-fg">{analysis.konszenzus}%</span>
+                    </div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-line">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-accent-strong to-accent"
+                        style={{ width: `${analysis.konszenzus}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-xs text-muted">Mennyire egységes a vélemény</p>
+                  </AIInsightCard>
+
+                  {analysis.vitapontok.length > 0 && (
+                    <AIInsightCard title="Vitapontok" className="md:col-span-2">
+                      <ul className="space-y-2">
+                        {analysis.vitapontok.map((v, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-fg-soft">
+                            <Scale size={15} className="mt-0.5 shrink-0 text-neutral" />
+                            {v}
+                          </li>
+                        ))}
+                      </ul>
+                    </AIInsightCard>
+                  )}
+
+                  <AIInsightCard title="Kulcsszavak" className={analysis.vitapontok.length > 0 ? '' : 'md:col-span-2'}>
+                    <div className="flex flex-wrap gap-2">
+                      {analysis.kulcsszavak.map((k) => (
+                        <span key={k} className="inline-flex items-center gap-1 rounded-full border border-line bg-card-2 px-2.5 py-1 text-xs text-fg-soft">
+                          <Hash size={11} className="text-accent-soft" />
+                          {k}
+                        </span>
+                      ))}
+                    </div>
+                  </AIInsightCard>
+
+                  <AIInsightCard title="Részletes elemzés" className="md:col-span-3">
+                    <p className="text-sm leading-relaxed text-fg-soft">{analysis.reszletes}</p>
+                    <p className="mt-3 flex items-center gap-3 border-t border-line pt-3 text-xs text-muted">
+                      <span className="inline-flex items-center gap-1"><MessagesSquare size={12} /> {formatCount(commentsCount)} hozzászólás</span>
+                      <span className="inline-flex items-center gap-1"><Eye size={12} /> {formatCount(views)} megtekintés</span>
+                    </p>
+                  </AIInsightCard>
+                </div>
               )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
-  );
-}
-
-function LegendRow({ color, value, label }: { color: string; value: number; label: string }) {
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-      <span className="font-semibold text-fg">{value}%</span>
-      <span className="text-muted">{label}</span>
-    </div>
-  );
-}
-
-function ActivityRow({ icon: Icon, value, delta }: { icon: typeof Eye; value: string; delta?: string }) {
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <Icon size={15} className="text-muted" />
-      <span className="text-fg-soft">{value}</span>
-      {delta && (
-        <span className="ml-auto inline-flex items-center gap-0.5 text-xs font-semibold text-positive">
-          <TrendingUp size={12} />
-          {delta}
-        </span>
-      )}
     </div>
   );
 }

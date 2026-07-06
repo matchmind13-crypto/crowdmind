@@ -7,6 +7,7 @@ import { PanelCard, PanelHeader } from '@/components/PanelCard';
 import { AIInsightCard, CheckList } from '@/components/AIInsightCard';
 import { SentimentDonut } from '@/components/SentimentDonut';
 import { usePosts } from '@/lib/usePosts';
+import { authedFetch } from '@/lib/authedFetch';
 import { formatCount } from '@/lib/utils';
 
 interface Analysis {
@@ -39,7 +40,7 @@ export default function AnalyzerPage() {
     setError('');
     setResult(null);
     try {
-      const res = await fetch('/api/summarize', {
+      const res = await authedFetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ postId: selectedId }),

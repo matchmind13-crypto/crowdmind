@@ -77,7 +77,7 @@ export function PostCard({ post }: { post: FeedPost }) {
 
       {/* Lenyitható panelek: előbb hozzászólások, alatta AI elemzés */}
       <CollapsibleComments postId={post.id} count={post.commentsCount} />
-      <CollapsibleAIAnalysis commentsCount={post.commentsCount} views={post.views} />
+      <CollapsibleAIAnalysis postId={post.id} commentsCount={post.commentsCount} views={post.views} />
     </article>
   );
 }

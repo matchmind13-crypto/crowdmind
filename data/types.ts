@@ -59,15 +59,6 @@ export interface AISummary {
   updatedAgo: string;
 }
 
-export interface Trend {
-  id: string;
-  rank: number;
-  title: string;
-  shares: number;
-  direction: 'up' | 'down';
-  color: string;
-}
-
 export interface CountryActivity {
   code: string;
   name: string;
