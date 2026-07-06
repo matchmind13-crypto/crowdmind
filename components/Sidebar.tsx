@@ -1,12 +1,17 @@
 'use client';
 import { useState } from 'react';
-import { Sparkles, Moon } from 'lucide-react';
-import { mainNav, topicNav, toolNav, type NavItem } from '@/data/navigation';
+import Link from 'next/link';
+import { Sparkles, Moon, Rss, Pencil, LogIn } from 'lucide-react';
+import { mainNav, toolNav, type NavItem } from '@/data/navigation';
 import { cn } from '@/lib/utils';
+import { usePreferences } from './PreferencesProvider';
+import { CategoryPickerModal } from './CategoryPickerModal';
 
 export function Sidebar() {
   const [active, setActive] = useState('Kezdőlap');
   const [dark, setDark] = useState(true);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const { userId, preferred, loading } = usePreferences();
 
   return (
     <aside className="flex h-full flex-col gap-6 overflow-y-auto px-3 py-5">
@@ -26,12 +31,53 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Témakörök */}
-      <Section title="Témakörök">
-        {topicNav.map((item) => (
-          <NavButton key={item.label} item={item} active={active === item.label} onClick={() => setActive(item.label)} />
-        ))}
-      </Section>
+      {/* Egyéni hírfolyam */}
+      <div>
+        <div className="mb-2 flex items-center justify-between px-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">Egyéni hírfolyam</h3>
+          {userId && (
+            <button
+              onClick={() => setPickerOpen(true)}
+              className="inline-flex items-center gap-1 text-xs font-medium text-accent-soft transition-colors hover:text-accent"
+            >
+              <Pencil size={12} />
+              Szerkesztés
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="mx-2 h-10 animate-pulse rounded-lg bg-hover" />
+        ) : !userId ? (
+          <Link
+            href="/login"
+            className="mx-2 flex items-center gap-2 rounded-lg border border-line bg-card-2 px-3 py-2 text-xs text-muted transition-colors hover:bg-hover"
+          >
+            <LogIn size={14} className="text-accent-soft" />
+            Jelentkezz be a személyre szabott hírfolyamhoz
+          </Link>
+        ) : preferred && preferred.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5 px-2">
+            {preferred.map((cat) => (
+              <span
+                key={cat}
+                className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent-strong/10 px-2.5 py-1 text-xs text-fg-soft"
+              >
+                <Rss size={11} className="text-accent-soft" />
+                {cat}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <button
+            onClick={() => setPickerOpen(true)}
+            className="mx-2 flex w-[calc(100%-1rem)] items-center gap-2 rounded-lg border border-dashed border-line px-3 py-2 text-left text-xs text-muted transition-colors hover:bg-hover"
+          >
+            <Rss size={14} className="text-accent-soft" />
+            Állítsd be, mely témák érdekelnek
+          </button>
+        )}
+      </div>
 
       {/* Eszközök */}
       <Section title="Eszközök">
@@ -72,6 +118,8 @@ export function Sidebar() {
           <span className={cn('h-4 w-4 rounded-full bg-white transition-transform', dark && 'translate-x-4')} />
         </span>
       </button>
+
+      {pickerOpen && <CategoryPickerModal onClose={() => setPickerOpen(false)} />}
     </aside>
   );
 }
