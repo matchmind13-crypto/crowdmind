@@ -32,6 +32,32 @@ html {
   color-scheme: dark;
 }
 
+/* ============================================================
+   VILÁGOS TÉMA – a .light osztály a <html> elemen felülírja a
+   szín-tokeneket; a Tailwind utility-k (bg-card, text-fg, ...)
+   var()-okra fordulnak, így automatikusan átszíneződik minden.
+   ============================================================ */
+html.light {
+  color-scheme: light;
+  --color-bg: #f3f4f9;
+  --color-bg-elevated: #ffffff;
+  --color-card: #ffffff;
+  --color-card-2: #f1f3f9;
+  --color-hover: #e8ebf4;
+  --color-line: #dde2ee;
+
+  --color-accent: #7c3aed;
+  --color-accent-strong: #6d28d9;
+  --color-accent-soft: #7c3aed;
+
+  --color-fg: #171b26;
+  --color-fg-soft: #3a4155;
+  --color-muted: #69718a;
+}
+
+html.light ::-webkit-scrollbar-thumb { background: #c4cbdd; }
+html.light ::-webkit-scrollbar-thumb:hover { background: #aab3ca; }
+
 body {
   background-color: var(--color-bg);
   color: var(--color-fg);

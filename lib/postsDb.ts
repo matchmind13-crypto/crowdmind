@@ -24,7 +24,22 @@ async function resolveUsernames(userIds: (string | null | undefined)[]): Promise
   return names;
 }
 
-function mapRow(p: any, commentsCount: number, names: Map<string, string>): FeedPost {
+/** post_id -> {yes,no} a votes táblából. A posts.yes_votes/no_votes számlálók
+ *  frissítését az RLS blokkolja, ezért a votes tábla az igazság forrása;
+ *  a régi (számlálóval seedelt) posztok értékei alapként adódnak hozzá. */
+async function fetchVoteCounts(): Promise<Map<number, { yes: number; no: number }>> {
+  const counts = new Map<number, { yes: number; no: number }>();
+  const { data } = await supabase.from('votes').select('post_id,vote');
+  ((data ?? []) as any[]).forEach((v) => {
+    if (v.vote !== 'yes' && v.vote !== 'no') return; // régi formátumú sorok kihagyása
+    const c = counts.get(v.post_id) ?? { yes: 0, no: 0 };
+    if (v.vote === 'yes') c.yes += 1; else c.no += 1;
+    counts.set(v.post_id, c);
+  });
+  return counts;
+}
+
+function mapRow(p: any, commentsCount: number, names: Map<string, string>, votes?: { yes: number; no: number }): FeedPost {
   return {
     id: p.id,
     category: [p.category || 'Általános', ...(p.subcategory ? [p.subcategory] : [])],
@@ -38,8 +53,8 @@ function mapRow(p: any, commentsCount: number, names: Map<string, string>): Feed
     body: String(p.description ?? '').split(/\n{2,}/).map((s: string) => s.trim()).filter(Boolean),
     media: Array.isArray(p.media) ? p.media : [],
     commentsCount,
-    yesVotes: p.yes_votes ?? 0,
-    noVotes: p.no_votes ?? 0,
+    yesVotes: (p.yes_votes ?? 0) + (votes?.yes ?? 0),
+    noVotes: (p.no_votes ?? 0) + (votes?.no ?? 0),
   };
 }
 
@@ -58,8 +73,11 @@ export async function fetchFeedPosts(): Promise<FeedPost[]> {
     counts.set(c.post_id, (counts.get(c.post_id) ?? 0) + 1);
   });
 
-  const names = await resolveUsernames(posts.map((p) => p.user_id));
-  return posts.map((p) => mapRow(p, counts.get(p.id) ?? 0, names));
+  const [names, voteCounts] = await Promise.all([
+    resolveUsernames(posts.map((p) => p.user_id)),
+    fetchVoteCounts(),
+  ]);
+  return posts.map((p) => mapRow(p, counts.get(p.id) ?? 0, names, voteCounts.get(p.id)));
 }
 
 /** Egyetlen poszt betöltése azonosító alapján (poszt-aloldalhoz). */
@@ -71,12 +89,12 @@ export async function fetchPostById(id: number): Promise<FeedPost | null> {
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!p) return null;
-  const { count } = await supabase
-    .from('comments')
-    .select('id', { count: 'exact', head: true })
-    .eq('post_id', id);
-  const names = await resolveUsernames([(p as any).user_id]);
-  return mapRow(p, count ?? 0, names);
+  const [{ count }, names, voteCounts] = await Promise.all([
+    supabase.from('comments').select('id', { count: 'exact', head: true }).eq('post_id', id),
+    resolveUsernames([(p as any).user_id]),
+    fetchVoteCounts(),
+  ]);
+  return mapRow(p, count ?? 0, names, voteCounts.get(id));
 }
 
 export interface NewPostInput {

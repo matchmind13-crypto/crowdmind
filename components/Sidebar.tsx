@@ -6,12 +6,13 @@ import { Sparkles, Moon, Rss, Pencil, LogIn } from 'lucide-react';
 import { mainNav, toolNav } from '@/data/navigation';
 import { cn } from '@/lib/utils';
 import { useUnreadCount } from '@/lib/useUnread';
+import { useTheme } from '@/lib/useTheme';
 import { usePreferences } from './PreferencesProvider';
 import { CategoryPickerModal } from './CategoryPickerModal';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [dark, setDark] = useState(true);
+  const { dark, toggle: toggleTheme } = useTheme();
   const [pickerOpen, setPickerOpen] = useState(false);
   const { userId, preferred, loading } = usePreferences();
   const unread = useUnreadCount();
@@ -102,20 +103,25 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Eszközök (későbbi funkciók) */}
+      {/* Eszközök – mindegyik saját aloldalra visz */}
       <div>
         <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted">Eszközök</h3>
         <div className="space-y-1">
           {toolNav.map((item) => {
             const Icon = item.icon;
+            const active = pathname === item.href;
             return (
-              <button
-                key={item.label}
-                className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium text-fg-soft transition-colors hover:bg-hover"
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
+                  active ? 'bg-accent-strong/15 text-fg ring-1 ring-accent/20' : 'text-fg-soft hover:bg-hover',
+                )}
               >
-                <Icon size={18} className="text-muted" />
+                <Icon size={18} className={active ? 'text-accent-soft' : 'text-muted'} />
                 <span className="flex-1 text-left">{item.label}</span>
-              </button>
+              </Link>
             );
           })}
         </div>
@@ -132,14 +138,17 @@ export function Sidebar() {
         <p className="mt-2 text-xs leading-relaxed text-muted">
           Kérdezd az AI-t bármilyen témáról, és kapj azonnali elemzést!
         </p>
-        <button className="mt-3 w-full rounded-lg bg-accent-strong py-2 text-sm font-semibold text-white transition-colors hover:bg-accent">
+        <Link
+          href="/assistant"
+          className="mt-3 block w-full rounded-lg bg-accent-strong py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-accent"
+        >
           Chat indítása
-        </button>
+        </Link>
       </div>
 
-      {/* Sötét mód kapcsoló */}
+      {/* Sötét mód kapcsoló – valódi téma-váltás, mentett beállítással */}
       <button
-        onClick={() => setDark((d) => !d)}
+        onClick={toggleTheme}
         className="flex items-center gap-2 px-2 py-1 text-sm text-fg-soft"
       >
         <Moon size={16} className="text-muted" />

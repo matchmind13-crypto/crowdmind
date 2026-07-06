@@ -20,9 +20,9 @@ export const mainNav: NavItem[] = [
   { label: 'Értesítések', href: '/notifications', icon: Bell },
 ];
 
-export const toolNav: { label: string; icon: LucideIcon }[] = [
-  { label: 'AI elemző', icon: Brain },
-  { label: 'Összehasonlító', icon: GitCompareArrows },
-  { label: 'Hangulatindex', icon: Gauge },
-  { label: 'Közösségi térkép', icon: Map },
+export const toolNav: NavItem[] = [
+  { label: 'AI elemző', href: '/analyzer', icon: Brain },
+  { label: 'Összehasonlító', href: '/compare', icon: GitCompareArrows },
+  { label: 'Hangulatindex', href: '/sentiment', icon: Gauge },
+  { label: 'Közösségi térkép', href: '/map', icon: Map },
 ];
