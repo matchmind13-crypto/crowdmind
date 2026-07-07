@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { ThumbsUp, ThumbsDown, HelpCircle } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, HelpCircle, ChartLine, ChevronDown } from 'lucide-react';
 import { castVote } from '@/lib/postsDb';
+import { OpinionTimeline } from './OpinionTimeline';
 import { formatCount } from '@/lib/utils';
 
 /**
@@ -24,6 +25,7 @@ export function CommunitySnapshot({
   const [no, setNo] = useState(noVotes);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; needsLogin?: boolean } | null>(null);
+  const [timelineOpen, setTimelineOpen] = useState(false);
 
   const total = yes + no;
   const forPct = total > 0 ? Math.round((yes / total) * 100) : 0;
@@ -103,6 +105,17 @@ export function CommunitySnapshot({
           )}
         </p>
       )}
+
+      {/* Vélemény-idővonal – lenyitásra töltődik */}
+      <button
+        onClick={() => setTimelineOpen((o) => !o)}
+        className="mt-2.5 flex w-full items-center justify-center gap-1.5 border-t border-line pt-2.5 text-xs font-medium text-muted transition-colors hover:text-accent-soft"
+      >
+        <ChartLine size={13} className="text-accent-soft" />
+        Vélemény-idővonal
+        <ChevronDown size={13} className={`transition-transform ${timelineOpen ? 'rotate-180' : ''}`} />
+      </button>
+      {timelineOpen && <OpinionTimeline postId={postId} />}
     </div>
   );
 }

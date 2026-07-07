@@ -1,19 +1,19 @@
 'use client';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Gauge, TrendingUp, ThumbsUp, ThumbsDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { StatCard } from '@/components/StatCard';
 import { usePosts } from '@/lib/usePosts';
+import { fetchPlatformTimeline } from '@/lib/postsDb';
 import { formatCount } from '@/lib/utils';
 
 /**
  * Hangulatindex – a közösség hangulatának bővebb nézete.
- * VALÓDI adat: az összesített és kategóriánkénti hangulat a tényleges
- * mellette/ellene szavazatokból számolódik.
- * MOCK adat (kódban jelölve): az idősoros trend-grafikon – még nincs
- * historikus szavazat-naplónk, ezt később valódi idősorra kell cserélni.
+ * Minden adat VALÓDI: az összesített és kategóriánkénti hangulat a tényleges
+ * mellette/ellene szavazatokból, a trend-görbe pedig a votes tábla
+ * időbélyegeiből (fetchPlatformTimeline) számolódik.
  */
 export default function SentimentPage() {
   const { posts, loading } = usePosts();
@@ -44,14 +44,13 @@ export default function SentimentPage() {
     return { yes, no, total, positive, categories, best: rated[0] ?? null, worst: rated[rated.length - 1] ?? null };
   }, [posts]);
 
-  // MOCK: 7 napos hangulat-trend. Nincs még historikus szavazat-napló,
-  // ezért determinisztikus demó-görbét mutatunk a jelenlegi érték körül.
-  // KÉSŐBB CSERÉLENDŐ: votes.created_at alapján számolt valódi napi idősorra.
-  const trend = useMemo(() => {
-    const base = stats.positive;
-    const wiggle = [-6, -2, 3, -3, 5, 1, 0];
-    return wiggle.map((w, i) => ({ day: i, value: Math.max(5, Math.min(95, base + w)) }));
-  }, [stats.positive]);
+  // VALÓDI idősor: a votes tábla időbélyeges szavazataiból, naponta összegezve.
+  const [trend, setTrend] = useState<{ day: string; forPct: number; total: number }[] | null>(null);
+  useEffect(() => {
+    let active = true;
+    void fetchPlatformTimeline().then((t) => { if (active) setTrend(t); });
+    return () => { active = false; };
+  }, []);
 
   return (
     <AppShell wide>
@@ -78,16 +77,27 @@ export default function SentimentPage() {
           </p>
         </div>
 
-        {/* Trend (MOCK – lásd a fenti kommentet) */}
+        {/* Hangulat-trend – VALÓDI napi idősor a szavazatokból */}
         <div className="rounded-2xl border border-line bg-card p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-fg">7 napos trend</h2>
-            <span className="rounded-md bg-neutral/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-neutral">Demó adat</span>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-fg">Hangulat-trend</h2>
+            <span className="rounded-md bg-positive/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-positive">Valódi adat</span>
           </div>
-          <TrendChart points={trend.map((t) => t.value)} />
-          <p className="mt-3 text-center text-xs text-muted">
-            A valódi idősoros mérés hamarosan — amint elég szavazat gyűlik össze naponta.
-          </p>
+          {trend === null ? (
+            <div className="h-32 animate-pulse rounded-xl bg-card-2" />
+          ) : trend.length < 2 ? (
+            <p className="py-8 text-center text-sm leading-relaxed text-muted">
+              Még kevés napi adat van a görbéhez — minden nappal és szavazattal itt
+              rajzolódik ki, merre mozog a közösség hangulata. 📈
+            </p>
+          ) : (
+            <>
+              <TrendChart points={trend.map((t) => t.forPct)} labels={trend.map((t) => t.day.slice(5).replace('-', '.'))} />
+              <p className="mt-3 text-center text-xs text-muted">
+                A közösség kumulatív támogatottsága naponta, minden valódi szavazat alapján
+              </p>
+            </>
+          )}
         </div>
       </div>
 
@@ -168,13 +178,16 @@ function BigGauge({ value }: { value: number }) {
   );
 }
 
-function TrendChart({ points }: { points: number[] }) {
+function TrendChart({ points, labels }: { points: number[]; labels: string[] }) {
   const w = 420, h = 130, pad = 10;
-  const step = (w - pad * 2) / (points.length - 1);
-  const y = (v: number) => h - pad - (v / 100) * (h - pad * 2);
-  const line = points.map((p, i) => `${pad + i * step},${Math.round(y(p) * 100) / 100}`).join(' ');
-  const area = `${pad},${h - pad} ${line} ${w - pad},${h - pad}`;
-  const days = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
+  const step = points.length > 1 ? (w - pad * 2) / (points.length - 1) : 0;
+  const xi = (i: number) => Math.round((pad + i * step) * 100) / 100;
+  const y = (v: number) => Math.round((h - pad - (v / 100) * (h - pad * 2)) * 100) / 100;
+  const line = points.map((p, i) => `${xi(i)},${y(p)}`).join(' ');
+  const area = `${pad},${h - pad} ${line} ${xi(points.length - 1)},${h - pad}`;
+  // Legfeljebb 7 dátum-címke, egyenletesen ritkítva, hogy sok nap esetén se torlódjanak.
+  const labelStep = Math.max(1, Math.ceil(labels.length / 7));
+  const shown = labels.filter((_, i) => i % labelStep === 0 || i === labels.length - 1);
 
   return (
     <div>
@@ -185,14 +198,15 @@ function TrendChart({ points }: { points: number[] }) {
             <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0" />
           </linearGradient>
         </defs>
+        <line x1={pad} y1={y(50)} x2={w - pad} y2={y(50)} stroke="var(--color-line)" strokeDasharray="4 4" />
         <polygon points={area} fill="url(#trendfill)" />
         <polyline points={line} fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" />
         {points.map((p, i) => (
-          <circle key={i} cx={pad + i * step} cy={y(p)} r="3.5" fill="var(--color-accent)" />
+          <circle key={i} cx={xi(i)} cy={y(p)} r="3.5" fill="var(--color-accent)" />
         ))}
       </svg>
       <div className="mt-1 flex justify-between px-1 text-[10px] text-muted">
-        {days.map((d) => <span key={d}>{d}</span>)}
+        {shown.map((d, i) => <span key={`${d}-${i}`}>{d}</span>)}
       </div>
     </div>
   );

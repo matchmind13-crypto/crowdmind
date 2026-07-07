@@ -272,6 +272,77 @@ export async function castVote(postId: number, vote: 'yes' | 'no', standing?: st
   return { ok: true };
 }
 
+/** Egy pont a vélemény-idővonalon. */
+export interface TimelinePoint {
+  t: string;       // időbélyeg (ISO)
+  forPct: number;  // támogatottság % ebben a pillanatban
+  total: number;   // összes szavazat eddig a pontig
+}
+
+/**
+ * VÉLEMÉNY-IDŐVONAL egy témához — a votes tábla időbélyeges szavazataiból
+ * visszaépítve. A poszt beégetett kezdő-számlálói adják az alapvonalat,
+ * onnantól minden szavazat egy-egy pont. Új tábla nem kell: az adat magától
+ * gyűlik minden szavazattal.
+ */
+export async function fetchOpinionTimeline(postId: number): Promise<TimelinePoint[]> {
+  const [{ data: post }, { data: voteRows }] = await Promise.all([
+    supabase.from('posts').select('created_at,yes_votes,no_votes').eq('id', postId).maybeSingle(),
+    supabase.from('votes').select('vote,created_at').eq('post_id', postId).order('created_at', { ascending: true }),
+  ]);
+  if (!post) return [];
+
+  let yes = (post as any).yes_votes ?? 0;
+  let no = (post as any).no_votes ?? 0;
+  const points: TimelinePoint[] = [];
+  const push = (t: string) => {
+    const total = yes + no;
+    points.push({ t, forPct: total > 0 ? Math.round((yes / total) * 100) : 50, total });
+  };
+  push((post as any).created_at);
+
+  ((voteRows ?? []) as any[]).forEach((v) => {
+    if (v.vote === 'yes') yes += 1;
+    else if (v.vote === 'no') no += 1;
+    else return; // régi formátumú szavazatok (home/away/draw) kihagyva
+    push(v.created_at);
+  });
+
+  // Ha nagyon sok a pont, ritkítjuk (az első és utolsó mindig marad).
+  if (points.length > 80) {
+    const step = Math.ceil(points.length / 80);
+    return points.filter((_, i) => i % step === 0 || i === points.length - 1);
+  }
+  return points;
+}
+
+/**
+ * PLATFORM-SZINTŰ napi hangulat-idővonal — az összes valódi szavazatból,
+ * naponta összegezve (kumulatív támogatottság a nap végén).
+ */
+export async function fetchPlatformTimeline(): Promise<{ day: string; forPct: number; total: number }[]> {
+  const { data } = await supabase
+    .from('votes')
+    .select('vote,created_at')
+    .order('created_at', { ascending: true })
+    .limit(5000);
+  const rows = ((data ?? []) as any[]).filter((v) => v.vote === 'yes' || v.vote === 'no');
+  if (rows.length === 0) return [];
+
+  const byDay = new Map<string, { yes: number; no: number }>();
+  let yes = 0;
+  let no = 0;
+  rows.forEach((v) => {
+    if (v.vote === 'yes') yes += 1; else no += 1;
+    byDay.set(String(v.created_at).slice(0, 10), { yes, no });
+  });
+  return [...byDay.entries()].map(([day, c]) => ({
+    day,
+    forPct: Math.round((c.yes / (c.yes + c.no)) * 100),
+    total: c.yes + c.no,
+  }));
+}
+
 /** A bejelentkezett felhasználó értesítései (legfrissebb elöl). */
 export async function fetchNotifications(): Promise<NotificationItem[] | null> {
   const { data: { session } } = await supabase.auth.getSession();
