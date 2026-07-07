@@ -13,8 +13,24 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [message, setMessage] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
+
+  // Jelszó-visszaállító email küldése (a linkje a /reset-password oldalra hoz vissza).
+  async function handleForgotPassword() {
+    setMessage('');
+    setInfo('');
+    if (!email.trim()) {
+      setMessage('Írd be az email címed, és utána kattints az „Elfelejtetted a jelszavad?" linkre.');
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) setMessage(error.message);
+    else setInfo('Elküldtük a jelszó-visszaállító emailt. Nézd meg a postafiókod (a spam mappát is)!');
+  }
 
   // Valós idejű felhasználónév-ellenőrzés (debounce-szal), csak regisztrációnál.
   useEffect(() => {
@@ -205,7 +221,17 @@ export default function LoginPage() {
             {loading ? 'Folyamatban…' : isLogin ? 'Bejelentkezés' : 'Fiók létrehozása'}
           </button>
 
+          {isLogin && (
+            <button
+              onClick={() => void handleForgotPassword()}
+              className="w-full text-center text-xs text-muted transition-colors hover:text-accent-soft"
+            >
+              Elfelejtetted a jelszavad?
+            </button>
+          )}
+
           {message && <p className="text-center text-sm text-negative">{message}</p>}
+          {info && <p className="text-center text-sm text-positive">{info}</p>}
         </div>
       </div>
 

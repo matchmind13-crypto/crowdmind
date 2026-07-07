@@ -1,7 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { ChevronRight, Bookmark, Share2, MoreHorizontal, Eye, Layers } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ChevronRight, Bookmark, Share2, MoreHorizontal, Eye, Layers, Trash2, Loader2 } from 'lucide-react';
 import { isSaved, toggleSaved } from '@/lib/savedPosts';
+import { supabase } from '@/lib/supabase';
+import { deleteOwnPost } from '@/lib/postsDb';
 import { UserBadge } from './UserBadge';
 import { PostTypeBadge } from './PostTypeBadge';
 import { MediaGallery } from './MediaGallery';
@@ -12,9 +14,17 @@ import { formatCount } from '@/lib/utils';
 import type { FeedPost } from '@/data/types';
 
 export function PostCard({ post }: { post: FeedPost }) {
-  // Mentés állapot – jelenleg localStorage-alapú (lásd lib/savedPosts.ts megjegyzését).
+  // Mentés állapot – bejelentkezve a fiókhoz kötve (saved_posts tábla), különben helyi.
   const [saved, setSaved] = useState(false);
-  useEffect(() => { setSaved(isSaved(post.id)); }, [post.id]);
+  const [uid, setUid] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    void isSaved(post.id).then((s) => { if (active) setSaved(s); });
+    supabase.auth.getSession().then(({ data }) => { if (active) setUid(data.session?.user?.id ?? null); });
+    return () => { active = false; };
+  }, [post.id]);
+
+  const isOwn = !!uid && post.authorId === uid;
 
   return (
     <article className="rounded-2xl border border-line bg-card p-5 sm:p-6">
@@ -46,12 +56,16 @@ export function PostCard({ post }: { post: FeedPost }) {
             icon={Bookmark}
             label="Mentés"
             active={saved}
-            onClick={() => setSaved(toggleSaved(post.id))}
+            onClick={() => { void toggleSaved(post.id).then(setSaved); }}
           />
           <ActionButton icon={Share2} label="Megosztás" />
-          <button className="grid h-9 w-9 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-hover hover:text-fg-soft">
-            <MoreHorizontal size={18} />
-          </button>
+          {isOwn ? (
+            <OwnPostMenu postId={post.id} />
+          ) : (
+            <button className="grid h-9 w-9 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-hover hover:text-fg-soft">
+              <MoreHorizontal size={18} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -79,6 +93,80 @@ export function PostCard({ post }: { post: FeedPost }) {
       <CollapsibleComments postId={post.id} count={post.commentsCount} />
       <CollapsibleAIAnalysis postId={post.id} commentsCount={post.commentsCount} views={post.views} />
     </article>
+  );
+}
+
+/** "..." menü a SAJÁT posztodon: törlés kétlépcsős megerősítéssel. */
+function OwnPostMenu({ postId }: { postId: number }) {
+  const [open, setOpen] = useState(false);
+  const [state, setState] = useState<'idle' | 'confirm' | 'deleting'>('idle');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setState('idle');
+      }
+    }
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+
+  async function handleDelete() {
+    setState('deleting');
+    const res = await deleteOwnPost(postId);
+    if (res.ok) window.location.href = '/';
+    else setState('idle');
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="grid h-9 w-9 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-hover hover:text-fg-soft"
+        aria-label="További műveletek"
+      >
+        <MoreHorizontal size={18} />
+      </button>
+      {open && (
+        <div className="absolute right-0 z-20 mt-1.5 w-52 overflow-hidden rounded-xl border border-line bg-card-2 p-1 shadow-2xl shadow-black/50">
+          {state === 'idle' && (
+            <button
+              onClick={() => setState('confirm')}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-negative transition-colors hover:bg-hover"
+            >
+              <Trash2 size={15} />
+              Téma törlése
+            </button>
+          )}
+          {state === 'confirm' && (
+            <div className="px-3 py-2">
+              <p className="mb-2 text-sm text-fg-soft">Biztos törlöd? Ez nem vonható vissza.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => void handleDelete()}
+                  className="flex-1 rounded-lg bg-negative/15 py-1.5 text-sm font-semibold text-negative hover:bg-negative/25"
+                >
+                  Törlés
+                </button>
+                <button
+                  onClick={() => setState('idle')}
+                  className="flex-1 rounded-lg border border-line py-1.5 text-sm text-fg-soft hover:bg-hover"
+                >
+                  Mégse
+                </button>
+              </div>
+            </div>
+          )}
+          {state === 'deleting' && (
+            <p className="flex items-center gap-2 px-3 py-2 text-sm text-muted">
+              <Loader2 size={14} className="animate-spin" /> Törlés…
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

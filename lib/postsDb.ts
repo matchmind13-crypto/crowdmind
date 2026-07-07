@@ -134,6 +134,30 @@ export async function createPost(input: NewPostInput): Promise<{ ok: boolean; er
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 
+/** Saját poszt törlése. A user_id-szűrés garantálja, hogy csak a sajátodat törölheted. */
+export async function deleteOwnPost(postId: number): Promise<{ ok: boolean; error?: string }> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return { ok: false, error: 'Bejelentkezés szükséges' };
+  const { error } = await supabase
+    .from('posts')
+    .delete()
+    .eq('id', postId)
+    .eq('user_id', session.user.id);
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+/** Saját hozzászólás törlése (csak a sajátodat). */
+export async function deleteOwnComment(commentId: number): Promise<{ ok: boolean; error?: string }> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return { ok: false, error: 'Bejelentkezés szükséges' };
+  const { error } = await supabase
+    .from('comments')
+    .delete()
+    .eq('id', commentId)
+    .eq('user_id', session.user.id);
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
 /** Egy poszt hozzászólásai (legfrissebb elöl). */
 export async function fetchComments(postId: number): Promise<FeedComment[]> {
   const { data, error } = await supabase
@@ -146,6 +170,7 @@ export async function fetchComments(postId: number): Promise<FeedComment[]> {
   const names = await resolveUsernames(rows.map((r) => r.user_id));
   return rows.map((r) => ({
     id: r.id,
+    userId: r.user_id ?? null,
     username: (r.user_id && names.get(r.user_id)) || FALLBACK_AUTHOR,
     ago: timeAgo(r.created_at),
     body: String(r.content ?? ''),

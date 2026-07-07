@@ -135,7 +135,10 @@ export function CollapsibleComments({ postId, count }: { postId: number; count: 
                   <div className="h-20 animate-pulse rounded-xl bg-card-2/60" />
                 </div>
               ) : (
-                <CommentList comments={sorted} />
+                <CommentList
+                  comments={sorted}
+                  onDeleted={() => { setAdded((a) => a - 1); void load(); }}
+                />
               )}
             </div>
           </motion.div>

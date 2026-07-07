@@ -33,6 +33,7 @@ export interface FeedPost {
 /** Adatbázisból betöltött hozzászólás. */
 export interface FeedComment {
   id: number;
+  userId: string | null;
   username: string;
   ago: string;
   body: string;

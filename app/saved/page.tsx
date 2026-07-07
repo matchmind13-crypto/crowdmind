@@ -12,15 +12,17 @@ import { getSavedIds } from '@/lib/savedPosts';
 
 /**
  * Mentett – a felhasználó által elmentett posztok.
- *
- * FIGYELEM (mock-jellegű rész): a mentés-lista jelenleg localStorage-ból jön
- * (csak ezen az eszközön él) – lásd lib/savedPosts.ts. A posztok maguk viszont
- * valódi adatbázis-adatok. KÉSŐBB: saved_posts tábla a Supabase-ben.
+ * Bejelentkezve a fiókhoz kötve (saved_posts tábla, minden eszközön);
+ * kijelentkezve vagy a tábla hiányában localStorage-fallback.
  */
 export default function SavedPage() {
   const { posts, loading } = usePosts();
   const [savedIds, setSavedIds] = useState<number[]>([]);
-  useEffect(() => { setSavedIds(getSavedIds()); }, []);
+  useEffect(() => {
+    let active = true;
+    void getSavedIds().then((ids) => { if (active) setSavedIds(ids); });
+    return () => { active = false; };
+  }, []);
 
   const saved = useMemo(
     () => (posts ?? []).filter((p) => savedIds.includes(p.id)),
@@ -59,8 +61,8 @@ export default function SavedPage() {
             <PanelHeader title="Jó tudni" />
             <p className="flex gap-2 px-1 text-sm leading-relaxed text-muted">
               <Info size={15} className="mt-0.5 shrink-0 text-accent-soft" />
-              A mentéseid jelenleg ezen az eszközön tárolódnak. Hamarosan a fiókodhoz
-              kötjük őket, hogy minden eszközödön elérhetők legyenek.
+              Bejelentkezve a mentéseid a fiókodhoz kötődnek, így minden eszközödön
+              ugyanazok. Kijelentkezve csak ebben a böngészőben élnek.
             </p>
           </PanelCard>
         </>
