@@ -30,7 +30,7 @@ export default function AnalyzerPage() {
   const [selectedId, setSelectedId] = useState<number | ''>('');
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState<{ analysis: Analysis; commentsCount: number; votes: { yes: number; no: number } } | null>(null);
+  const [result, setResult] = useState<{ analysis: Analysis; cached?: boolean; generatedAt?: string; commentsCount: number; votes: { yes: number; no: number } } | null>(null);
 
   const selected = posts?.find((p) => p.id === selectedId) ?? null;
 
@@ -132,6 +132,11 @@ export default function AnalyzerPage() {
       {/* Eredmény */}
       {result && (
         <>
+          <p className="text-xs text-muted">
+            {result.cached
+              ? `Tárolt elemzés · készült: ${result.generatedAt ? new Date(result.generatedAt).toLocaleString('hu-HU') : 'korábban'} — új hozzászólásnál automatikusan frissül`
+              : 'Frissen készült elemzés'}
+          </p>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <AIInsightCard title="Összegzés" className="md:col-span-1">
               <p className="text-sm leading-relaxed text-fg-soft">{result.analysis.osszegzes}</p>

@@ -68,11 +68,11 @@ export async function POST(request: Request) {
 
   try {
     const anthropic = new Anthropic();
+    // Haiku 4.5: ~ötödannyiba kerül, mint az Opus — rövid kérdés-válaszra bőven elég.
+    // (A Haiku nem támogatja az adaptív gondolkodást és az effort paramétert.)
     const response = await anthropic.messages.create({
-      model: 'claude-opus-4-8',
-      max_tokens: 4096,
-      thinking: { type: 'adaptive' },
-      output_config: { effort: 'low' },
+      model: 'claude-haiku-4-5',
+      max_tokens: 2048,
       system:
         'A CrowdMind AI asszisztense vagy. A CrowdMind egy magyar nyelvű, AI-alapú közösségi ' +
         'véleményplatform: a felhasználók témákat indítanak, szavaznak (mellette/ellene) és hozzászólnak, ' +

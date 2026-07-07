@@ -18,6 +18,11 @@ interface Analysis {
   konszenzus: number;
 }
 
+interface AnalysisMeta {
+  cached: boolean;
+  generatedAt?: string;
+}
+
 /**
  * Lenyitható AI-elemzés a posztok alatt – VALÓDI Claude-elemzéssel.
  * A lenyitás ingyenes; maga az elemzés gombnyomásra készül el
@@ -35,6 +40,7 @@ export function CollapsibleAIAnalysis({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [meta, setMeta] = useState<AnalysisMeta | null>(null);
   const [error, setError] = useState<{ msg: string; needsLogin?: boolean } | null>(null);
 
   async function analyze() {
@@ -54,6 +60,7 @@ export function CollapsibleAIAnalysis({
         return;
       }
       setAnalysis(data.analysis);
+      setMeta({ cached: Boolean(data.cached), generatedAt: data.generatedAt });
     } catch {
       setError({ msg: 'Az elemzés nem sikerült. Próbáld újra!' });
     }
@@ -126,6 +133,14 @@ export function CollapsibleAIAnalysis({
                   <Loader2 size={26} className="mx-auto mb-3 animate-spin text-accent-soft" />
                   <p className="text-sm text-fg-soft">Az AI épp olvassa a hozzászólásokat…</p>
                 </div>
+              )}
+
+              {analysis && meta && (
+                <p className="mb-3 text-xs text-muted">
+                  {meta.cached
+                    ? `Tárolt elemzés · készült: ${meta.generatedAt ? new Date(meta.generatedAt).toLocaleString('hu-HU') : 'korábban'} — új hozzászólásnál automatikusan frissül`
+                    : 'Frissen készült elemzés'}
+                </p>
               )}
 
               {analysis && (

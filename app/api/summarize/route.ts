@@ -66,14 +66,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Hiányzó ANTHROPIC_API_KEY' }, { status: 500 });
   }
 
-  // Védelem: csak bejelentkezve + felhasználónként max 5 elemzés / 5 perc.
+  // Védelem: csak bejelentkezve. (A kérés-limit lentebb, csak valódi generáláskor fogy —
+  // a gyorsítótárból kiszolgált elemzés ingyenes és korlátlan.)
   const userId = await getUserIdFromRequest(request);
   if (!userId) {
     return NextResponse.json({ error: 'Az AI elemzéshez jelentkezz be.' }, { status: 401 });
   }
-  if (!checkRateLimit(`summarize:${userId}`, 5, 5 * 60 * 1000)) {
-    return NextResponse.json({ error: 'Túl sok elemzést kértél. Várj pár percet, és próbáld újra.' }, { status: 429 });
-  }
+  const callerToken = (request.headers.get('authorization') ?? '').slice(7);
 
   const body = await request.json().catch(() => null);
   const postId = Number(body?.postId);
@@ -102,6 +101,46 @@ export async function POST(request: Request) {
   const voteRows = ((await votesRes.json().catch(() => [])) as any[]) ?? [];
   const yes = (post.yes_votes ?? 0) + voteRows.filter((v) => v.vote === 'yes').length;
   const no = (post.no_votes ?? 0) + voteRows.filter((v) => v.vote === 'no').length;
+  const votesTotal = yes + no;
+
+  // ---- GYORSÍTÓTÁR: ha van friss tárolt elemzés, azt adjuk vissza (0 Ft, azonnali) ----
+  // Frissesség: a hozzászolás-szám nem változott ÉS a szavazatok nem mozdultak érdemben
+  // (kevesebb mint 5 új VAGY <10% eltérés). Pörgő témáknál 10 percenként max 1 újragenerálás.
+  try {
+    const cacheRes = await fetch(
+      `${supabaseUrl}/rest/v1/ai_analyses?post_id=eq.${postId}&select=*`,
+      { headers: sb },
+    );
+    if (cacheRes.ok) {
+      const rows = (await cacheRes.json()) as any[];
+      const cached = Array.isArray(rows) ? rows[0] : null;
+      if (cached?.analysis) {
+        const voteDelta = Math.abs(votesTotal - (cached.votes_count ?? 0));
+        const voteThreshold = Math.max(5, Math.round((cached.votes_count ?? 0) * 0.1));
+        const isFresh =
+          cached.comments_count === comments.length && voteDelta < voteThreshold;
+        const ageMs = Date.now() - new Date(cached.created_at).getTime();
+        const throttled = ageMs < 10 * 60 * 1000; // 10 perces újragenerálási védőkorlát
+
+        if (isFresh || throttled) {
+          return NextResponse.json({
+            analysis: cached.analysis,
+            cached: true,
+            generatedAt: cached.created_at,
+            commentsCount: comments.length,
+            votes: { yes, no },
+          });
+        }
+      }
+    }
+  } catch {
+    // ha a tábla még nem létezik, cache nélkül megyünk tovább
+  }
+
+  // Innentől valódi (fizetett) generálás jön — itt fogy a kérés-limit.
+  if (!checkRateLimit(`summarize:${userId}`, 5, 5 * 60 * 1000)) {
+    return NextResponse.json({ error: 'Túl sok elemzést kértél. Várj pár percet, és próbáld újra.' }, { status: 429 });
+  }
 
   const material = [
     `TÉMA CÍME: ${post.title}`,
@@ -139,7 +178,32 @@ export async function POST(request: Request) {
 
     const text = response.content.find((b) => b.type === 'text')?.text ?? '';
     const analysis = JSON.parse(text);
-    return NextResponse.json({ analysis, commentsCount: comments.length, votes: { yes, no } });
+    const generatedAt = new Date().toISOString();
+
+    // Elemzés mentése a gyorsítótárba (best-effort; a hívó tokenjével írunk,
+    // mert az ai_analyses táblába csak bejelentkezett felhasználó írhat).
+    try {
+      await fetch(`${supabaseUrl}/rest/v1/ai_analyses?on_conflict=post_id`, {
+        method: 'POST',
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${callerToken}`,
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=merge-duplicates,return=minimal',
+        },
+        body: JSON.stringify({
+          post_id: postId,
+          analysis,
+          comments_count: comments.length,
+          votes_count: votesTotal,
+          created_at: generatedAt,
+        }),
+      });
+    } catch {
+      // ha a tábla még nem létezik, az elemzés attól még visszamegy a hívónak
+    }
+
+    return NextResponse.json({ analysis, cached: false, generatedAt, commentsCount: comments.length, votes: { yes, no } });
   } catch (e) {
     console.error('AI elemzés hiba:', e);
     const msg = e instanceof Anthropic.APIError ? `AI hiba (${e.status})` : 'AI elemzés sikertelen';
