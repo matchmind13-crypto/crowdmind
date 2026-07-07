@@ -1,28 +1,116 @@
 'use client';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Rss, Inbox, Plus, RefreshCw } from 'lucide-react';
+import { Rss, Inbox, Plus, RefreshCw, Sparkles, Flame, Clock, Heart } from 'lucide-react';
 import { PostCard } from './PostCard';
 import { usePreferences } from './PreferencesProvider';
 import { usePosts } from '@/lib/usePosts';
+import { cn } from '@/lib/utils';
 
+type Tab = 'neked' | 'felkapott' | 'friss';
+
+const LAST_VISIT_KEY = 'crowdmind_last_visit';
+
+/**
+ * A fő hírfolyam — a visszatérés köré strukturálva:
+ * - "Üdv újra!" sáv: mi történt a legutóbbi látogatásod óta,
+ * - Neked: a követett kategóriáid elöl, de a többi téma is ott van alattuk
+ *   (nem üres a feed akkor sem, ha a kedvenc kategóriádban épp csend van),
+ * - Felkapott: a legaktívabb témák,
+ * - Friss: szigorú időrend.
+ */
 export function Feed() {
   const { preferred } = usePreferences();
   const { posts, error } = usePosts();
+  const [tab, setTab] = useState<Tab>('neked');
+  const [lastVisit, setLastVisit] = useState<string | null>(null);
 
-  // Egyéni hírfolyam: a fő kategória (category[0]) alapján szűrünk.
-  const visible = posts
-    ? preferred
-      ? posts.filter((p) => preferred.includes(p.category[0]))
-      : posts
-    : null;
+  // Legutóbbi látogatás beolvasása, majd azonnali frissítése.
+  useEffect(() => {
+    try {
+      setLastVisit(window.localStorage.getItem(LAST_VISIT_KEY));
+      window.localStorage.setItem(LAST_VISIT_KEY, new Date().toISOString());
+    } catch {
+      // privát mód – nem baj
+    }
+  }, []);
+
+  const sinceVisit = useMemo(() => {
+    if (!posts || !lastVisit) return null;
+    const fresh = posts.filter((p) => p.createdAt > lastVisit);
+    if (fresh.length === 0) return null;
+    const inPreferred = preferred
+      ? fresh.filter((p) => preferred.includes(p.category[0])).length
+      : 0;
+    return { total: fresh.length, inPreferred };
+  }, [posts, lastVisit, preferred]);
+
+  const ordered = useMemo(() => {
+    const list = posts ?? [];
+    if (tab === 'friss') {
+      return [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    }
+    if (tab === 'felkapott') {
+      return [...list].sort(
+        (a, b) =>
+          (b.yesVotes + b.noVotes + b.commentsCount * 2) -
+          (a.yesVotes + a.noVotes + a.commentsCount * 2),
+      );
+    }
+    // "Neked": követett kategóriák elöl (időrendben), utána a többi (időrendben)
+    if (!preferred || preferred.length === 0) {
+      return [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    }
+    const mine = list.filter((p) => preferred.includes(p.category[0]));
+    const rest = list.filter((p) => !preferred.includes(p.category[0]));
+    const byDate = (a: typeof list[number], b: typeof list[number]) => b.createdAt.localeCompare(a.createdAt);
+    return [...mine.sort(byDate), ...rest.sort(byDate)];
+  }, [posts, tab, preferred]);
+
+  const TABS: { id: Tab; label: string; icon: typeof Heart }[] = [
+    { id: 'neked', label: 'Neked', icon: Heart },
+    { id: 'felkapott', label: 'Felkapott', icon: Flame },
+    { id: 'friss', label: 'Friss', icon: Clock },
+  ];
 
   return (
     <div className="space-y-5">
-      {preferred && (
+      {/* Üdv újra! – mi történt a legutóbbi látogatásod óta */}
+      {sinceVisit && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-accent/25 bg-accent-strong/10 px-4 py-2.5 text-sm">
-          <Rss size={15} className="text-accent-soft" />
-          <span className="font-medium text-fg-soft">Egyéni hírfolyam:</span>
-          <span className="text-muted">{preferred.join(' · ')}</span>
+          <Sparkles size={15} className="shrink-0 text-accent-soft" />
+          <span className="text-fg-soft">
+            <span className="font-semibold text-fg">Üdv újra!</span>{' '}
+            {sinceVisit.total} új téma érkezett a legutóbbi látogatásod óta
+            {sinceVisit.inPreferred > 0 && (
+              <> — ebből <span className="font-semibold text-accent-soft">{sinceVisit.inPreferred} a követett kategóriáidban</span></>
+            )}
+            .
+          </span>
+        </div>
+      )}
+
+      {/* Fülek */}
+      <div className="flex items-center gap-1 rounded-xl border border-line bg-card p-1">
+        {TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={cn(
+              'flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-semibold transition-colors',
+              tab === id ? 'bg-accent-strong text-white' : 'text-muted hover:text-fg-soft',
+            )}
+          >
+            <Icon size={15} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'neked' && preferred && preferred.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 px-1 text-xs text-muted">
+          <Rss size={13} className="text-accent-soft" />
+          A követett kategóriáid ({preferred.join(', ')}) témái elöl — alattuk a többi friss téma.
         </div>
       )}
 
@@ -33,17 +121,15 @@ export function Feed() {
         </div>
       )}
 
-      {visible === null ? (
+      {posts === null ? (
         <>
           <div className="h-64 animate-pulse rounded-2xl border border-line bg-card" />
           <div className="h-64 animate-pulse rounded-2xl border border-line bg-card" />
         </>
-      ) : visible.length === 0 ? (
+      ) : ordered.length === 0 ? (
         <div className="rounded-2xl border border-line bg-card p-10 text-center">
           <Inbox size={30} className="mx-auto mb-3 text-muted" />
-          <p className="text-sm text-fg-soft">
-            {preferred ? 'Nincs poszt a kiválasztott kategóriákban.' : 'Még nincs egyetlen téma sem.'}
-          </p>
+          <p className="text-sm text-fg-soft">Még nincs egyetlen téma sem.</p>
           <Link
             href="/create"
             className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-accent-strong px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent"
@@ -53,7 +139,7 @@ export function Feed() {
           </Link>
         </div>
       ) : (
-        visible.map((post) => <PostCard key={post.id} post={post} />)
+        ordered.map((post) => <PostCard key={post.id} post={post} />)
       )}
     </div>
   );

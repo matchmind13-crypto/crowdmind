@@ -127,11 +127,42 @@ export async function createPost(input: NewPostInput): Promise<{ ok: boolean; er
     media: input.mediaUrl?.trim() ? [input.mediaUrl.trim()] : null,
   };
 
-  let { error } = await (supabase.from('posts') as any).insert(rich);
+  let { data: created, error } = await (supabase.from('posts') as any).insert(rich).select('id').single();
   if (error && /column|schema cache/i.test(error.message)) {
-    ({ error } = await (supabase.from('posts') as any).insert(base));
+    ({ data: created, error } = await (supabase.from('posts') as any).insert(base).select('id').single());
   }
-  return error ? { ok: false, error: error.message } : { ok: true };
+  if (error) return { ok: false, error: error.message };
+
+  // Visszatérési horog: értesítjük azokat, akik követik ezt a kategóriát
+  // (max 50 fő, best-effort — hiba esetén a poszt attól még létrejött).
+  if (created?.id) {
+    void notifyCategoryFollowers(created.id, input.category, base.title, session.user.id);
+  }
+  return { ok: true };
+}
+
+/** Értesítés a kategória követőinek egy új témáról. */
+async function notifyCategoryFollowers(postId: number, category: string, title: string, authorId: string) {
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .contains('preferred_categories', [category])
+      .neq('user_id', authorId)
+      .limit(50);
+    const followers = ((data ?? []) as { user_id: string }[]).map((f) => f.user_id);
+    if (followers.length === 0) return;
+    await (supabase.from('notifications') as any).insert(
+      followers.map((user_id) => ({
+        user_id,
+        post_id: postId,
+        message: `Új téma a követett ${category} kategóriádban: „${title}”`,
+        read: false,
+      })),
+    );
+  } catch {
+    // nem kritikus
+  }
 }
 
 /** Saját poszt törlése. A user_id-szűrés garantálja, hogy csak a sajátodat törölheted. */
@@ -214,8 +245,10 @@ export async function addComment(postId: number, content: string): Promise<{ ok:
   return { ok: true };
 }
 
-/** Szavazat leadása a meglévő /api/vote végponton (duplikátumot a DB tiltja). */
-export async function castVote(postId: number, vote: 'yes' | 'no'): Promise<{ ok: boolean; already?: boolean; needsLogin?: boolean; error?: string }> {
+/** Szavazat leadása a meglévő /api/vote végponton (duplikátumot a DB tiltja).
+ *  A `standing` (pl. "62% mellette") bekerül a téma gazdájának értesítésébe —
+ *  így az értesítés önmagában is elmondja, merre fordult a téma. */
+export async function castVote(postId: number, vote: 'yes' | 'no', standing?: string): Promise<{ ok: boolean; already?: boolean; needsLogin?: boolean; error?: string }> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { ok: false, needsLogin: true };
   const res = await fetch('/api/vote', {
@@ -231,7 +264,11 @@ export async function castVote(postId: number, vote: 'yes' | 'no'): Promise<{ ok
     const d = await res.json().catch(() => ({}));
     return { ok: false, error: d.error || 'Hiba a szavazáskor' };
   }
-  void notifyPostOwner(postId, session.user.id, (title) => `Új szavazat érkezett a témádra: „${title}”`);
+  void notifyPostOwner(postId, session.user.id, (title) =>
+    standing
+      ? `Új szavazat a témádra: „${title}” — állás: ${standing}`
+      : `Új szavazat érkezett a témádra: „${title}”`,
+  );
   return { ok: true };
 }
 

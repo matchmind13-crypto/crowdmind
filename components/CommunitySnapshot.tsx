@@ -33,7 +33,11 @@ export function CommunitySnapshot({
     if (busy) return;
     setBusy(true);
     setMsg(null);
-    const res = await castVote(postId, v);
+    // Az új állás kiszámítása a szavazat UTÁN — ez kerül az értesítésbe.
+    const nYes = yes + (v === 'yes' ? 1 : 0);
+    const nTotal = total + 1;
+    const standing = `${Math.round((nYes / nTotal) * 100)}% mellette (${nTotal} szavazat)`;
+    const res = await castVote(postId, v, standing);
     if (res.ok) {
       if (v === 'yes') setYes((n) => n + 1); else setNo((n) => n + 1);
       setMsg({ text: 'Szavazatod rögzítve. Köszönjük!' });

@@ -5,6 +5,11 @@ import { UsernameSetupModal } from '@/components/UsernameSetupModal';
 export const metadata: Metadata = {
   title: 'CrowdMind',
   description: 'A közösség véleménye, AI-al rendszerezve',
+  manifest: '/manifest.json',
+};
+
+export const viewport = {
+  themeColor: '#05070d',
 };
 
 export default function RootLayout({
