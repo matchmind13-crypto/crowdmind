@@ -1,7 +1,7 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Users, Pencil, LogIn, Rss, Plus, ChevronRight } from 'lucide-react';
+import { Users, Pencil, LogIn, Rss, Plus, ChevronRight, Bell } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { PostCompactCard } from '@/components/PostCompactCard';
@@ -9,6 +9,7 @@ import { PanelCard, PanelHeader } from '@/components/PanelCard';
 import { CategoryPickerModal } from '@/components/CategoryPickerModal';
 import { usePreferences } from '@/components/PreferencesProvider';
 import { usePosts } from '@/lib/usePosts';
+import { fetchFollowedPostIds } from '@/lib/postFollows';
 import { CATEGORIES } from '@/lib/categories';
 
 /**
@@ -28,6 +29,21 @@ function FollowingContent() {
   const { userId, preferred, loading: prefLoading } = usePreferences();
   const { posts, loading } = usePosts();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [followedIds, setFollowedIds] = useState<number[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void fetchFollowedPostIds().then((ids) => { if (active) setFollowedIds(ids); });
+    return () => { active = false; };
+  }, [userId]);
+
+  // A követett témák a követés sorrendjében (legutóbb követett elöl).
+  const followedPosts = useMemo(() => {
+    if (!followedIds || !posts) return [];
+    return followedIds
+      .map((id) => posts.find((p) => p.id === id))
+      .filter((p): p is NonNullable<typeof p> => !!p);
+  }, [followedIds, posts]);
 
   const sections = useMemo(() => {
     if (!preferred) return [];
@@ -73,20 +89,46 @@ function FollowingContent() {
             Bejelentkezés
           </Link>
         </div>
-      ) : !preferred || preferred.length === 0 ? (
-        <div className="rounded-2xl border border-line bg-card p-10 text-center">
-          <Rss size={28} className="mx-auto mb-3 text-accent-soft" />
-          <p className="text-sm text-fg-soft">Még nem követsz egyetlen kategóriát sem.</p>
-          <p className="mt-1 text-xs text-muted">Válaszd ki, mely témák érdekelnek, és itt gyűjtjük őket neked.</p>
-          <button
-            onClick={() => setPickerOpen(true)}
-            className="mt-4 rounded-xl bg-accent-strong px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent"
-          >
-            Kategóriák kiválasztása
-          </button>
-        </div>
       ) : (
-        sections.map(({ cat, icon: Icon, posts: catPosts }) => (
+        <>
+          {/* Követett témák — harang ikonnal követett konkrét posztok */}
+          {followedPosts.length > 0 && (
+            <section>
+              <div className="mb-3 flex items-center gap-3">
+                <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-strong/15 text-accent-soft">
+                  <Bell size={16} />
+                </span>
+                <h2 className="text-base font-bold text-fg">Követett témák</h2>
+                <span className="rounded-full bg-accent-strong/15 px-2 py-0.5 text-xs font-semibold text-accent-soft">
+                  {followedPosts.length} téma
+                </span>
+                <div className="h-px flex-1 bg-line" />
+              </div>
+              <p className="mb-3 px-1 text-xs text-muted">
+                Ezekről a témákról minden új hozzászólásnál értesítést kapsz.
+              </p>
+              <div className="space-y-3">
+                {followedPosts.map((p) => (
+                  <PostCompactCard key={p.id} post={p} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {!preferred || preferred.length === 0 ? (
+            <div className="rounded-2xl border border-line bg-card p-10 text-center">
+              <Rss size={28} className="mx-auto mb-3 text-accent-soft" />
+              <p className="text-sm text-fg-soft">Még nem követsz egyetlen kategóriát sem.</p>
+              <p className="mt-1 text-xs text-muted">Válaszd ki, mely témák érdekelnek, és itt gyűjtjük őket neked.</p>
+              <button
+                onClick={() => setPickerOpen(true)}
+                className="mt-4 rounded-xl bg-accent-strong px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent"
+              >
+                Kategóriák kiválasztása
+              </button>
+            </div>
+          ) : (
+            sections.map(({ cat, icon: Icon, posts: catPosts }) => (
           <section key={cat}>
             <div className="mb-3 flex items-center gap-3">
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-strong/15 text-accent-soft">
@@ -127,7 +169,9 @@ function FollowingContent() {
               </div>
             )}
           </section>
-        ))
+            ))
+          )}
+        </>
       )}
 
       {pickerOpen && <CategoryPickerModal onClose={() => setPickerOpen(false)} />}

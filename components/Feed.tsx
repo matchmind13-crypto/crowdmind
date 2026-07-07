@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Rss, Inbox, Plus, RefreshCw, Sparkles, Flame, Clock, Heart } from 'lucide-react';
 import { PostCard } from './PostCard';
+import { DebateOfTheDay, pickDebateOfTheDay } from './DebateOfTheDay';
 import { usePreferences } from './PreferencesProvider';
 import { usePosts } from '@/lib/usePosts';
 import { cn } from '@/lib/utils';
@@ -67,6 +68,8 @@ export function Feed() {
     return [...mine.sort(byDate), ...rest.sort(byDate)];
   }, [posts, tab, preferred]);
 
+  const debate = useMemo(() => pickDebateOfTheDay(posts ?? []), [posts]);
+
   const TABS: { id: Tab; label: string; icon: typeof Heart }[] = [
     { id: 'neked', label: 'Neked', icon: Heart },
     { id: 'felkapott', label: 'Felkapott', icon: Flame },
@@ -75,6 +78,9 @@ export function Feed() {
 
   return (
     <div className="space-y-5">
+      {/* A nap vitája – a legaktívabb, legmegosztóbb téma kiemelve */}
+      {debate && <DebateOfTheDay post={debate} />}
+
       {/* Üdv újra! – mi történt a legutóbbi látogatásod óta */}
       {sinceVisit && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-accent/25 bg-accent-strong/10 px-4 py-2.5 text-sm">

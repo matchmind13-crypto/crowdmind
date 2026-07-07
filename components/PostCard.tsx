@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, Bookmark, Share2, MoreHorizontal, Eye, Layers, Trash2, Loader2 } from 'lucide-react';
+import { ChevronRight, Bookmark, Bell, Share2, MoreHorizontal, Eye, Layers, Trash2, Loader2 } from 'lucide-react';
 import { isSaved, toggleSaved } from '@/lib/savedPosts';
+import { isFollowingPost, toggleFollowPost } from '@/lib/postFollows';
 import { supabase } from '@/lib/supabase';
 import { deleteOwnPost } from '@/lib/postsDb';
 import { UserBadge } from './UserBadge';
@@ -16,15 +17,35 @@ import type { FeedPost } from '@/data/types';
 export function PostCard({ post }: { post: FeedPost }) {
   // Mentés állapot – bejelentkezve a fiókhoz kötve (saved_posts tábla), különben helyi.
   const [saved, setSaved] = useState(false);
+  const [following, setFollowing] = useState(false);
+  const [followMsg, setFollowMsg] = useState<string | null>(null);
   const [uid, setUid] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
     void isSaved(post.id).then((s) => { if (active) setSaved(s); });
+    void isFollowingPost(post.id).then((f) => { if (active) setFollowing(f); });
     supabase.auth.getSession().then(({ data }) => { if (active) setUid(data.session?.user?.id ?? null); });
     return () => { active = false; };
   }, [post.id]);
 
   const isOwn = !!uid && post.authorId === uid;
+
+  async function handleFollow() {
+    const res = await toggleFollowPost(post.id);
+    if (res.needsLogin) {
+      setFollowMsg('A követéshez jelentkezz be.');
+      setTimeout(() => setFollowMsg(null), 3500);
+      return;
+    }
+    if (res.unavailable) {
+      setFollowMsg('A követés funkció hamarosan elérhető.');
+      setTimeout(() => setFollowMsg(null), 3500);
+      return;
+    }
+    setFollowing(res.following);
+    setFollowMsg(res.following ? 'Értesítünk minden új hozzászólásról. 🔔' : null);
+    if (res.following) setTimeout(() => setFollowMsg(null), 3500);
+  }
 
   return (
     <article className="rounded-2xl border border-line bg-card p-5 sm:p-6">
@@ -52,6 +73,14 @@ export function PostCard({ post }: { post: FeedPost }) {
         </span>
 
         <div className="ml-auto flex items-center gap-2">
+          {!isOwn && (
+            <ActionButton
+              icon={Bell}
+              label={following ? 'Követed' : 'Követés'}
+              active={following}
+              onClick={() => { void handleFollow(); }}
+            />
+          )}
           <ActionButton
             icon={Bookmark}
             label="Mentés"
@@ -68,6 +97,10 @@ export function PostCard({ post }: { post: FeedPost }) {
           )}
         </div>
       </div>
+
+      {followMsg && (
+        <p className="mt-2 text-right text-xs text-accent-soft">{followMsg}</p>
+      )}
 
       {/* Szöveg */}
       {post.body.length > 0 && (

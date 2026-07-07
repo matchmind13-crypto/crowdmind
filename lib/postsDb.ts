@@ -231,7 +231,7 @@ async function notifyPostOwner(postId: number, actorId: string, buildMessage: (t
   }
 }
 
-/** Hozzászólás mentése a bejelentkezett felhasználó nevében (+ értesítés a poszt gazdájának). */
+/** Hozzászólás mentése a bejelentkezett felhasználó nevében (+ értesítés a poszt gazdájának és a téma követőinek). */
 export async function addComment(postId: number, content: string): Promise<{ ok: boolean; error?: string; needsLogin?: boolean }> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { ok: false, needsLogin: true, error: 'A hozzászóláshoz jelentkezz be.' };
@@ -242,7 +242,37 @@ export async function addComment(postId: number, content: string): Promise<{ ok:
   });
   if (error) return { ok: false, error: error.message };
   void notifyPostOwner(postId, session.user.id, (title, actor) => `${actor} hozzászólt a témádhoz: „${title}”`);
+  void notifyPostFollowers(postId, session.user.id);
   return { ok: true };
+}
+
+/** Értesítés a téma követőinek egy új hozzászólásról (max 50 fő, best-effort).
+ *  A poszt gazdáját kihagyjuk — ő a notifyPostOwner útján már kap értesítést. */
+async function notifyPostFollowers(postId: number, actorId: string) {
+  try {
+    const [{ data: post }, { data: followRows }] = await Promise.all([
+      supabase.from('posts').select('user_id,title').eq('id', postId).maybeSingle(),
+      supabase.from('post_follows').select('user_id').eq('post_id', postId).neq('user_id', actorId).limit(50),
+    ]);
+    const owner = (post as any)?.user_id as string | null;
+    const title = String((post as any)?.title ?? '');
+    const targets = ((followRows ?? []) as { user_id: string }[])
+      .map((f) => f.user_id)
+      .filter((id) => id !== owner);
+    if (targets.length === 0) return;
+    const names = await resolveUsernames([actorId]);
+    const actorName = names.get(actorId) ?? FALLBACK_AUTHOR;
+    await (supabase.from('notifications') as any).insert(
+      targets.map((user_id) => ({
+        user_id,
+        post_id: postId,
+        message: `${actorName} hozzászólt egy követett témádhoz: „${title}”`,
+        read: false,
+      })),
+    );
+  } catch {
+    // az értesítés nem kritikus – a hozzászólás ettől még sikeres
+  }
 }
 
 /** Szavazat leadása a meglévő /api/vote végponton (duplikátumot a DB tiltja).
