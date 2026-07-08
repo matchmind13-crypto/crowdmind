@@ -37,6 +37,10 @@ export interface FeedComment {
   username: string;
   ago: string;
   body: string;
+  /** Lájkok száma a comment_likes táblából (0, amíg a tábla nem létezik). */
+  likes: number;
+  /** A bejelentkezett felhasználó lájkolta-e ezt a hozzászólást. */
+  likedByMe: boolean;
 }
 
 /** Valódi értesítés a notifications táblából. */

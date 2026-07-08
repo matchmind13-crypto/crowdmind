@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { timeAgo } from './timeAgo';
+import { fetchCommentLikes } from './commentLikes';
 import type { FeedPost, FeedComment, NotificationItem, PostType } from '@/data/types';
 
 const POST_TYPES: PostType[] = [
@@ -189,7 +190,7 @@ export async function deleteOwnComment(commentId: number): Promise<{ ok: boolean
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 
-/** Egy poszt hozzászólásai (legfrissebb elöl). */
+/** Egy poszt hozzászólásai (legfrissebb elöl), lájk-számokkal. */
 export async function fetchComments(postId: number): Promise<FeedComment[]> {
   const { data, error } = await supabase
     .from('comments')
@@ -198,14 +199,22 @@ export async function fetchComments(postId: number): Promise<FeedComment[]> {
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as any[];
-  const names = await resolveUsernames(rows.map((r) => r.user_id));
-  return rows.map((r) => ({
-    id: r.id,
-    userId: r.user_id ?? null,
-    username: (r.user_id && names.get(r.user_id)) || FALLBACK_AUTHOR,
-    ago: timeAgo(r.created_at),
-    body: String(r.content ?? ''),
-  }));
+  const [names, likes] = await Promise.all([
+    resolveUsernames(rows.map((r) => r.user_id)),
+    fetchCommentLikes(rows.map((r) => r.id)),
+  ]);
+  return rows.map((r) => {
+    const like = likes.get(r.id);
+    return {
+      id: r.id,
+      userId: r.user_id ?? null,
+      username: (r.user_id && names.get(r.user_id)) || FALLBACK_AUTHOR,
+      ago: timeAgo(r.created_at),
+      body: String(r.content ?? ''),
+      likes: like?.count ?? 0,
+      likedByMe: like?.likedByMe ?? false,
+    };
+  });
 }
 
 /** Értesítés létrehozása a poszt tulajdonosának (best-effort: hiba esetén csendben kihagyjuk). */
