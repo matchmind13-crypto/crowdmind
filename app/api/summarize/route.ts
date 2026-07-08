@@ -51,8 +51,17 @@ const ANALYSIS_SCHEMA = {
       type: 'integer',
       description: 'Mennyire egységes a közösség véleménye, 0-100 (100 = teljes egyetértés).',
     },
+    ordog_ugyvedje: {
+      type: 'string',
+      description:
+        'Az "ördög ügyvédje": a jelenleg KISEBBSÉGBEN lévő oldal legerősebb, legjobb hiszemű érve ' +
+        '(steelman), 2-4 mondatban, magyarul. A szavazatállásból döntsd el, melyik a kisebbségi oldal; ' +
+        'kiegyenlített állásnál (45-55%) a hozzászólásokban kevésbé képviselt oldalt erősítsd. ' +
+        'Ha van releváns kisebbségi hozzászólás, arra építs. Ne gúnyolódj és ne kioktass — a cél, ' +
+        'hogy az olvasó a döntése előtt a legjobb ellenérvet is mérlegelhesse.',
+    },
   },
-  required: ['osszegzes', 'reszletes', 'fo_allaspontok', 'vitapontok', 'hangulat', 'kulcsszavak', 'konszenzus'],
+  required: ['osszegzes', 'reszletes', 'fo_allaspontok', 'vitapontok', 'hangulat', 'kulcsszavak', 'konszenzus', 'ordog_ugyvedje'],
   additionalProperties: false,
 };
 
@@ -168,7 +177,10 @@ export async function POST(request: Request) {
         'véleményed lenne: mindig "A közösség szerint...", "A legtöbb hozzászóló azt említi...", ' +
         '"A pozitív vélemények fő oka..." stílusban írj. Ha kevés az adat (kevés hozzászólás/szavazat), ' +
         'ezt jelezd őszintén az összegzésben, és óvatosan következtess. A hangulat-százalékokat a ' +
-        'szavazatokból ÉS a hozzászólások hangvételéből együtt becsüld; a három érték összege 100 legyen.',
+        'szavazatokból ÉS a hozzászólások hangvételéből együtt becsüld; a három érték összege 100 legyen. ' +
+        'Az ordog_ugyvedje mezőben a kisebbségi oldal LEGERŐSEBB érvét képviseld tisztességesen ' +
+        '("A másik oldal legerősebb érve..." stílusban) — ez a CrowdMind buborék-ellenes funkciója: ' +
+        'az olvasó a többségi vélemény mellett mindig lássa a legjobb ellenérvet is.',
       messages: [{ role: 'user', content: `Elemezd a következő témát és közösségi visszajelzéseit:\n\n${material}` }],
     });
 

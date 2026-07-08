@@ -18,6 +18,8 @@ interface Analysis {
   hangulat: { pozitiv: number; semleges: number; negativ: number };
   kulcsszavak: string[];
   konszenzus: number;
+  /** A kisebbségi oldal legerősebb érve — régebbi tárolt elemzésekben még nincs. */
+  ordog_ugyvedje?: string;
 }
 
 /**
@@ -199,6 +201,19 @@ export default function AnalyzerPage() {
               </div>
             </AIInsightCard>
           </div>
+
+          {result.analysis.ordog_ugyvedje && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
+                <Scale size={14} />
+                Az ördög ügyvédje — a legerősebb ellenérv
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-fg-soft">{result.analysis.ordog_ugyvedje}</p>
+              <p className="mt-2.5 border-t border-amber-500/15 pt-2 text-xs text-muted">
+                A CrowdMind mindig megmutatja a kisebbségi oldal legjobb érvét is — döntés előtt lásd a teljes képet.
+              </p>
+            </div>
+          )}
 
           <AIInsightCard title="Részletes elemzés">
             <p className="text-sm leading-relaxed text-fg-soft">{result.analysis.reszletes}</p>
