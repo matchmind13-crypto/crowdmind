@@ -11,7 +11,7 @@ export interface DailyIndex {
   totalVotes: number;
   /** Változás a tegnapi kumulatív állapothoz képest, pontban (null = nincs elég adat). */
   delta: number | null;
-  topDivisive: { id: number; title: string; pct: number; total: number } | null;
+  topDivisive: { id: number; title: string; description: string; pct: number; total: number } | null;
   topActive: { id: number; title: string; total: number } | null;
   /** A mai nap magyar formátumban, Budapest szerint. */
   day: string;
@@ -20,22 +20,28 @@ export interface DailyIndex {
 interface PostRow {
   id: number;
   title: string;
+  description: string | null;
   yes_votes: number | null;
   no_votes: number | null;
 }
 
 export async function fetchDailyIndex(): Promise<DailyIndex> {
   const [posts, votes] = await Promise.all([
-    sbRest<PostRow[]>('posts?select=id,title,yes_votes,no_votes&limit=1000'),
+    sbRest<PostRow[]>('posts?select=id,title,description,yes_votes,no_votes&limit=1000'),
     sbRest<{ vote: string; post_id: number; created_at: string }[]>(
       'votes?select=vote,post_id,created_at&order=created_at.asc&limit=5000',
     ),
   ]);
 
   // Poszt-szintű összesítés: alap-számlálók + valódi szavazat-sorok
-  const perPost = new Map<number, { title: string; yes: number; no: number }>();
+  const perPost = new Map<number, { title: string; description: string; yes: number; no: number }>();
   (posts ?? []).forEach((p) => {
-    perPost.set(p.id, { title: p.title, yes: p.yes_votes ?? 0, no: p.no_votes ?? 0 });
+    perPost.set(p.id, {
+      title: p.title,
+      description: (p.description ?? '').trim(),
+      yes: p.yes_votes ?? 0,
+      no: p.no_votes ?? 0,
+    });
   });
   const voteRows = (votes ?? []).filter((v) => v.vote === 'yes' || v.vote === 'no');
   voteRows.forEach((v) => {
@@ -90,7 +96,7 @@ export async function fetchDailyIndex(): Promise<DailyIndex> {
     if (total < 2) return;
     const p = Math.round((e.yes / total) * 100);
     if (better({ pct: p, total }, topDivisive)) {
-      topDivisive = { id, title: e.title, pct: p, total };
+      topDivisive = { id, title: e.title, description: e.description, pct: p, total };
     }
     if (!topActive || total > topActive.total) {
       topActive = { id, title: e.title, total };

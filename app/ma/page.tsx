@@ -85,6 +85,9 @@ export default async function DailyIndexPage() {
               A nap legmegosztóbb témája
             </p>
             <p className="mt-1.5 font-semibold text-fg">{idx.topDivisive.title}</p>
+            {idx.topDivisive.description.length > 0 && (
+              <p className="mt-1 line-clamp-2 text-sm text-muted">{idx.topDivisive.description}</p>
+            )}
             <div className="mt-2.5 flex h-2 overflow-hidden rounded-full bg-line">
               <div className="bg-positive" style={{ width: `${idx.topDivisive.pct}%` }} />
               <div className="bg-negative" style={{ width: `${100 - idx.topDivisive.pct}%` }} />

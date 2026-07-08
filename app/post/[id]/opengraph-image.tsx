@@ -92,15 +92,31 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           <div
             style={{
               display: 'flex',
-              fontSize: title.length > 70 ? 52 : 62,
+              fontSize: title.length > 70 ? 48 : 58,
               fontWeight: 800,
               lineHeight: 1.15,
-              maxWidth: 1050,
+              maxWidth: 1060,
               marginTop: 14,
             }}
           >
             {title.length > 120 ? `${title.slice(0, 120)}…` : title}
           </div>
+          {post?.description && post.description.trim().length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                fontSize: 27,
+                lineHeight: 1.45,
+                color: '#c7cad3',
+                maxWidth: 1060,
+                marginTop: 16,
+              }}
+            >
+              {post.description.trim().length > 150
+                ? `${post.description.trim().slice(0, 150)}…`
+                : post.description.trim()}
+            </div>
+          )}
         </div>
 
         {/* Szavazás-sáv + lábléc */}

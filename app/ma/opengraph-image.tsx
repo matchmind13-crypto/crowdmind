@@ -94,11 +94,18 @@ export default async function Image() {
               <span style={{ display: 'flex', width: 12, height: 12, borderRadius: 999, background: '#ef4444' }} />
               A NAP LEGMEGOSZTÓBB TÉMÁJA
             </span>
-            <span style={{ fontSize: 33, fontWeight: 700, color: '#f4f4f6', marginTop: 8 }}>
+            <span style={{ fontSize: 32, fontWeight: 700, color: '#f4f4f6', marginTop: 8 }}>
               {idx.topDivisive.title.length > 62
                 ? `${idx.topDivisive.title.slice(0, 62)}…`
                 : idx.topDivisive.title}
             </span>
+            {idx.topDivisive.description.length > 0 && (
+              <span style={{ fontSize: 21, color: '#9ca3af', marginTop: 6 }}>
+                {idx.topDivisive.description.length > 92
+                  ? `${idx.topDivisive.description.slice(0, 92)}…`
+                  : idx.topDivisive.description}
+              </span>
+            )}
             <div
               style={{
                 display: 'flex',
