@@ -213,6 +213,7 @@ export async function fetchComments(postId: number): Promise<FeedComment[]> {
       body: String(r.content ?? ''),
       likes: like?.count ?? 0,
       likedByMe: like?.likedByMe ?? false,
+      parentId: r.parent_id ?? null,
     };
   });
 }
@@ -240,19 +241,73 @@ async function notifyPostOwner(postId: number, actorId: string, buildMessage: (t
   }
 }
 
-/** Hozzászólás mentése a bejelentkezett felhasználó nevében (+ értesítés a poszt gazdájának és a téma követőinek). */
-export async function addComment(postId: number, content: string): Promise<{ ok: boolean; error?: string; needsLogin?: boolean }> {
+/** Hozzászólás vagy válasz mentése (+ értesítések: poszt gazdája, szülő-komment írója, követők). */
+export async function addComment(
+  postId: number,
+  content: string,
+  parentId?: number | null,
+): Promise<{ ok: boolean; error?: string; needsLogin?: boolean }> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { ok: false, needsLogin: true, error: 'A hozzászóláshoz jelentkezz be.' };
-  const { error } = await (supabase.from('comments') as any).insert({
+  const payload: Record<string, unknown> = {
     post_id: postId,
     user_id: session.user.id,
     content: content.trim(),
-  });
-  if (error) return { ok: false, error: error.message };
-  void notifyPostOwner(postId, session.user.id, (title, actor) => `${actor} hozzászólt a témádhoz: „${title}”`);
+  };
+  if (parentId) payload.parent_id = parentId;
+  const { error } = await (supabase.from('comments') as any).insert(payload);
+  if (error) {
+    // Ha a parent_id oszlop még nem létezik, a válasz funkció udvariasan jelez.
+    if (parentId && /parent_id|column|schema cache/i.test(error.message)) {
+      return { ok: false, error: 'A válasz funkció hamarosan elérhető.' };
+    }
+    return { ok: false, error: error.message };
+  }
+  if (parentId) {
+    void notifyReply(postId, parentId, session.user.id);
+  } else {
+    void notifyPostOwner(postId, session.user.id, (title, actor) => `${actor} hozzászólt a témádhoz: „${title}”`);
+  }
   void notifyPostFollowers(postId, session.user.id);
   return { ok: true };
+}
+
+/** Válasz-értesítés: a szülő-komment írójának (+ a poszt gazdájának, ha nem ugyanaz). */
+async function notifyReply(postId: number, parentId: number, actorId: string) {
+  try {
+    const [{ data: post }, { data: parent }, names] = await Promise.all([
+      supabase.from('posts').select('user_id,title').eq('id', postId).maybeSingle(),
+      supabase.from('comments').select('user_id').eq('id', parentId).maybeSingle(),
+      resolveUsernames([actorId]),
+    ]);
+    const owner = ((post as any)?.user_id as string | null) ?? null;
+    const parentAuthor = ((parent as any)?.user_id as string | null) ?? null;
+    const title = String((post as any)?.title ?? '');
+    const actorName = names.get(actorId) ?? FALLBACK_AUTHOR;
+
+    const rows: { user_id: string; post_id: number; message: string; read: boolean }[] = [];
+    if (parentAuthor && parentAuthor !== actorId) {
+      rows.push({
+        user_id: parentAuthor,
+        post_id: postId,
+        message: `${actorName} válaszolt a hozzászólásodra itt: „${title}”`,
+        read: false,
+      });
+    }
+    if (owner && owner !== actorId && owner !== parentAuthor) {
+      rows.push({
+        user_id: owner,
+        post_id: postId,
+        message: `${actorName} hozzászólt a témádhoz: „${title}”`,
+        read: false,
+      });
+    }
+    if (rows.length > 0) {
+      await (supabase.from('notifications') as any).insert(rows);
+    }
+  } catch {
+    // az értesítés nem kritikus
+  }
 }
 
 /** Értesítés a téma követőinek egy új hozzászólásról (max 50 fő, best-effort).

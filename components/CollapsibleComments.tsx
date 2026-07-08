@@ -137,7 +137,9 @@ export function CollapsibleComments({ postId, count }: { postId: number; count: 
               ) : (
                 <CommentList
                   comments={sorted}
+                  postId={postId}
                   onDeleted={() => { setAdded((a) => a - 1); void load(); }}
+                  onReplied={() => { setAdded((a) => a + 1); void load(); }}
                 />
               )}
             </div>

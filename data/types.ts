@@ -41,6 +41,8 @@ export interface FeedComment {
   likes: number;
   /** A bejelentkezett felhasználó lájkolta-e ezt a hozzászólást. */
   likedByMe: boolean;
+  /** Szülő-hozzászólás azonosítója, ha ez egy válasz (null = fő hozzászólás). */
+  parentId: number | null;
 }
 
 /** Valódi értesítés a notifications táblából. */
