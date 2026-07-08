@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
       // API-végpontok és privát oldalak nem valók a keresőbe.
-      disallow: ['/api/', '/notifications', '/saved', '/profile', '/reset-password', '/embed/'],
+      disallow: ['/api/', '/notifications', '/saved', '/profile', '/reset-password', '/embed/', '/admin'],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
   };
