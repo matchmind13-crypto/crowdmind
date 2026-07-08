@@ -73,17 +73,34 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           </div>
         </div>
 
-        {/* Cím */}
-        <div
-          style={{
-            display: 'flex',
-            fontSize: title.length > 70 ? 52 : 62,
-            fontWeight: 800,
-            lineHeight: 1.15,
-            maxWidth: 1050,
-          }}
-        >
-          {title.length > 120 ? `${title.slice(0, 120)}…` : title}
+        {/* Horog + cím: a kérdés a főszereplő */}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: 1.5,
+              color: '#f87171',
+            }}
+          >
+            <span style={{ display: 'flex', width: 12, height: 12, borderRadius: 999, background: '#ef4444' }} />
+            A KÖZÖSSÉG MOST SZAVAZ ERRŐL
+          </span>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: title.length > 70 ? 52 : 62,
+              fontWeight: 800,
+              lineHeight: 1.15,
+              maxWidth: 1050,
+              marginTop: 14,
+            }}
+          >
+            {title.length > 120 ? `${title.slice(0, 120)}…` : title}
+          </div>
         </div>
 
         {/* Szavazás-sáv + lábléc */}
@@ -102,13 +119,12 @@ export default async function Image({ params }: { params: Promise<{ id: string }
             <div style={{ display: 'flex', width: `${Math.max(100 - pct, 2)}%`, background: '#ef4444' }} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 30 }}>
-            <div style={{ display: 'flex', gap: 28 }}>
+            <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
               <span style={{ color: '#4ade80', fontWeight: 700 }}>{pct}% mellette</span>
               <span style={{ color: '#f87171', fontWeight: 700 }}>{100 - pct}% ellene</span>
+              <span style={{ color: '#9ca3af', fontSize: 26 }}>· {total} szavazat</span>
             </div>
-            <span style={{ color: '#9ca3af' }}>
-              {total} szavazat · szavazz te is a crowdmind.dev-en
-            </span>
+            <span style={{ color: '#c4b5fd', fontWeight: 700 }}>Te melyik oldalon állsz?</span>
           </div>
         </div>
       </div>

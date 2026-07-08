@@ -15,9 +15,9 @@ export function ShareDailyIndex({ pct, day }: { pct: number; day: string }) {
         await navigator.share({ title: 'CrowdMind napi közhangulat-index', text, url });
         return;
       }
-    } catch {
-      // a felhasználó bezárta a megosztási panelt — nem hiba
-      return;
+    } catch (e) {
+      // Csak a szándékos bezárásnál állunk le — más hibánál jön a vágólap.
+      if ((e as DOMException)?.name === 'AbortError') return;
     }
     try {
       await navigator.clipboard.writeText(`${text}\n${url}`);

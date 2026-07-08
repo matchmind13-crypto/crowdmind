@@ -1,10 +1,11 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, Bookmark, Bell, Share2, MoreHorizontal, Eye, Layers, Trash2, Loader2 } from 'lucide-react';
+import { ChevronRight, Bookmark, Bell, Share2, Check, MoreHorizontal, Eye, Layers, Trash2, Loader2 } from 'lucide-react';
 import { isSaved, toggleSaved } from '@/lib/savedPosts';
 import { isFollowingPost, toggleFollowPost } from '@/lib/postFollows';
 import { fetchContributionCounts } from '@/lib/credibility';
 import { supabase } from '@/lib/supabase';
+import { SITE_URL } from '@/lib/publicConfig';
 import { deleteOwnPost } from '@/lib/postsDb';
 import { UserBadge } from './UserBadge';
 import { CredibilityBadge } from './CredibilityBadge';
@@ -38,6 +39,30 @@ export function PostCard({ post }: { post: FeedPost }) {
   }, [post.id, post.authorId]);
 
   const isOwn = !!uid && post.authorId === uid;
+
+  const [shared, setShared] = useState(false);
+  async function handleShare() {
+    const url = `${SITE_URL}/post/${post.id}`;
+    const total = post.yesVotes + post.noVotes;
+    const pct = total > 0 ? Math.round((post.yesVotes / total) * 100) : 50;
+    const text = `„${post.title}” — a közösség ${pct}%-a mellette. Te melyik oldalon állsz?`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: post.title, text, url });
+        return;
+      }
+    } catch (e) {
+      // Csak a szándékos bezárásnál állunk le — más hibánál jön a vágólap.
+      if ((e as DOMException)?.name === 'AbortError') return;
+    }
+    try {
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      setShared(true);
+      setTimeout(() => setShared(false), 2500);
+    } catch {
+      // vágólap nélkül az URL kézzel másolható
+    }
+  }
 
   async function handleFollow() {
     const res = await toggleFollowPost(post.id);
@@ -97,7 +122,12 @@ export function PostCard({ post }: { post: FeedPost }) {
             active={saved}
             onClick={() => { void toggleSaved(post.id).then(setSaved); }}
           />
-          <ActionButton icon={Share2} label="Megosztás" />
+          <ActionButton
+            icon={shared ? Check : Share2}
+            label={shared ? 'Link másolva!' : 'Megosztás'}
+            active={shared}
+            onClick={() => { void handleShare(); }}
+          />
           {isOwn ? (
             <OwnPostMenu postId={post.id} />
           ) : (
