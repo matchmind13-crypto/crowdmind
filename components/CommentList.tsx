@@ -1,13 +1,13 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ThumbsUp, MessageCircle, Share2, Trash2, Check, X, Loader2, CornerDownRight } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, MessageCircle, Share2, Trash2, Check, X, Loader2, CornerDownRight } from 'lucide-react';
 import { UserBadge } from './UserBadge';
 import { CredibilityBadge } from './CredibilityBadge';
 import { ReportButton } from './ReportButton';
 import { supabase } from '@/lib/supabase';
 import { deleteOwnComment, addComment } from '@/lib/postsDb';
-import { toggleCommentLike } from '@/lib/commentLikes';
+import { setCommentVote } from '@/lib/commentLikes';
 import { fetchContributionCounts } from '@/lib/credibility';
 import { formatCount } from '@/lib/utils';
 import type { FeedComment } from '@/data/types';
@@ -43,9 +43,9 @@ export function CommentList({
     return () => { active = false; };
   }, [comments]);
 
-  // Szálazás: a fő hozzászólások lájk szerint csökkenő sorrendben (legjobb érv felül),
+  // Szálazás: a fő hozzászólások pontszám (lájk − dislike) szerint csökkenő sorrendben,
   // a válaszok a GYÖKÉR-szál alatt, időrendben (beszélgetés-sorrend). A válaszra adott
-  // válasz is ugyanabba a szálba kerül.
+  // válasz is ugyanabba a szálba kerül, és jelöljük, kinek szól (mint a Facebookon).
   const threads = useMemo(() => {
     const byId = new Map(comments.map((c) => [c.id, c]));
     const rootOf = (c: FeedComment): number => {
@@ -57,10 +57,12 @@ export function CommentList({
       }
       return cur.id;
     };
+    const score = (c: FeedComment) => (c.likes ?? 0) - (c.dislikes ?? 0);
     const topLevel = comments
       .filter((c) => !c.parentId || !byId.has(c.parentId))
-      .sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0));
+      .sort((a, b) => score(b) - score(a));
     const replies = new Map<number, FeedComment[]>();
+    const replyToName = new Map<number, string>();
     comments
       .filter((c) => c.parentId && byId.has(c.parentId))
       .forEach((c) => {
@@ -68,9 +70,13 @@ export function CommentList({
         const list = replies.get(root) ?? [];
         list.push(c);
         replies.set(root, list);
+        // Ha nem közvetlenül a fő hozzászólásra válaszol, mutatjuk, kinek szól.
+        if (c.parentId !== root) {
+          replyToName.set(c.id, byId.get(c.parentId!)!.username);
+        }
       });
     replies.forEach((list) => list.sort((a, b) => a.id - b.id));
-    return { topLevel, replies };
+    return { topLevel, replies, replyToName };
   }, [comments]);
 
   if (comments.length === 0) {
@@ -101,6 +107,7 @@ export function CommentList({
                   postId={postId}
                   isOwn={!!uid && r.userId === uid}
                   contributions={r.userId ? (contribs.get(r.userId) ?? null) : null}
+                  replyToName={threads.replyToName.get(r.id) ?? null}
                   onDeleted={onDeleted}
                   onReplied={onReplied}
                 />
@@ -113,11 +120,34 @@ export function CommentList({
   );
 }
 
+/** A @felhasznalonev említések kiemelése és linkelése a komment szövegében. */
+function BodyWithMentions({ text }: { text: string }) {
+  const parts = text.split(/(@[a-z0-9_]{3,20})/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.startsWith('@') ? (
+          <Link
+            key={i}
+            href={`/user/${encodeURIComponent(part.slice(1))}`}
+            className="font-semibold text-accent-soft hover:underline"
+          >
+            {part}
+          </Link>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
+  );
+}
+
 function CommentRow({
   comment,
   postId,
   isOwn,
   contributions,
+  replyToName = null,
   onDeleted,
   onReplied,
 }: {
@@ -125,12 +155,14 @@ function CommentRow({
   postId: number;
   isOwn: boolean;
   contributions: number | null;
+  replyToName?: string | null;
   onDeleted?: (id: number) => void;
   onReplied?: () => void;
 }) {
-  // Valódi, fiókhoz kötött lájk (comment_likes tábla), optimista frissítéssel.
-  const [liked, setLiked] = useState(comment.likedByMe);
+  // Valódi, fiókhoz kötött lájk/dislike (comment_likes tábla), optimista frissítéssel.
+  const [myVote, setMyVote] = useState<1 | -1 | 0>(comment.myVote);
   const [likes, setLikes] = useState(comment.likes);
+  const [dislikes, setDislikes] = useState(comment.dislikes);
   const [likeMsg, setLikeMsg] = useState<string | null>(null);
   const [delState, setDelState] = useState<'idle' | 'confirm' | 'deleting'>('idle');
   // Válasz-űrlap állapota
@@ -155,22 +187,26 @@ function CommentRow({
     onReplied?.();
   }
 
-  async function handleLike() {
-    const res = await toggleCommentLike(comment.id, liked);
+  async function handleVote(target: 1 | -1) {
+    const next: 1 | -1 | 0 = myVote === target ? 0 : target;
+    const res = await setCommentVote(comment.id, next);
     if (res.needsLogin) {
-      setLikeMsg('A lájkoláshoz jelentkezz be.');
+      setLikeMsg('A szavazáshoz jelentkezz be.');
       setTimeout(() => setLikeMsg(null), 3500);
       return;
     }
     if (res.unavailable) {
-      setLikeMsg('A lájk funkció hamarosan elérhető.');
+      setLikeMsg(target === -1 ? 'A dislike hamarosan elérhető.' : 'A lájk funkció hamarosan elérhető.');
       setTimeout(() => setLikeMsg(null), 3500);
       return;
     }
-    if (res.liked !== liked) {
-      setLiked(res.liked);
-      setLikes((n) => Math.max(0, n + (res.liked ? 1 : -1)));
-    }
+    if (!res.ok) return;
+    // Optimista számláló-frissítés: a régi szavazat le, az új fel.
+    if (myVote === 1) setLikes((n) => Math.max(0, n - 1));
+    if (myVote === -1) setDislikes((n) => Math.max(0, n - 1));
+    if (next === 1) setLikes((n) => n + 1);
+    if (next === -1) setDislikes((n) => n + 1);
+    setMyVote(next);
   }
 
   async function handleDelete() {
@@ -192,24 +228,51 @@ function CommentRow({
         <span className="text-xs text-muted">· {comment.ago}</span>
       </div>
 
-      <p className="mt-2 text-sm leading-relaxed text-fg-soft">{comment.body}</p>
+      {replyToName && (
+        <p className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-bg-elevated px-2 py-0.5 text-xs text-muted">
+          <CornerDownRight size={12} className="text-accent-soft" />
+          válasz neki: <span className="font-medium text-fg-soft">{replyToName}</span>
+        </p>
+      )}
+
+      <p className="mt-2 text-sm leading-relaxed text-fg-soft">
+        <BodyWithMentions text={comment.body} />
+      </p>
 
       <div className="mt-2.5 flex items-center gap-1 text-muted">
-        <button
-          onClick={() => void handleLike()}
-          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
-            liked
-              ? 'bg-accent-strong/15 text-accent-soft'
-              : 'bg-bg-elevated hover:bg-hover hover:text-fg-soft'
-          }`}
-          aria-label={liked ? 'Lájk visszavonása' : 'Tetszik'}
-        >
-          <ThumbsUp size={14} className={liked ? 'fill-current' : ''} />
-          {formatCount(likes)}
-        </button>
+        <div className="flex items-center gap-0.5 rounded-full bg-bg-elevated px-1 py-0.5">
+          <button
+            onClick={() => void handleVote(1)}
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold transition-colors ${
+              myVote === 1 ? 'bg-accent-strong/20 text-accent-soft' : 'hover:text-positive'
+            }`}
+            aria-label={myVote === 1 ? 'Lájk visszavonása' : 'Tetszik'}
+          >
+            <ThumbsUp size={14} className={myVote === 1 ? 'fill-current' : ''} />
+            {formatCount(likes)}
+          </button>
+          <button
+            onClick={() => void handleVote(-1)}
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold transition-colors ${
+              myVote === -1 ? 'bg-negative/15 text-negative' : 'hover:text-negative'
+            }`}
+            aria-label={myVote === -1 ? 'Dislike visszavonása' : 'Nem tetszik'}
+          >
+            <ThumbsDown size={14} className={myVote === -1 ? 'fill-current' : ''} />
+            {formatCount(dislikes)}
+          </button>
+        </div>
 
         <button
-          onClick={() => { setReplyOpen((o) => !o); setReplyError(null); }}
+          onClick={() => {
+            setReplyOpen((o) => {
+              const next = !o;
+              // Facebook-stílus: válasznál automatikusan megjelöljük a másik felet.
+              if (next && replyText.trim() === '') setReplyText(`@${comment.username} `);
+              return next;
+            });
+            setReplyError(null);
+          }}
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors hover:bg-hover hover:text-fg-soft ${replyOpen ? 'bg-hover text-fg-soft' : ''}`}
         >
           <MessageCircle size={14} />

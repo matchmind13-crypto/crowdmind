@@ -39,8 +39,10 @@ export interface FeedComment {
   body: string;
   /** Lájkok száma a comment_likes táblából (0, amíg a tábla nem létezik). */
   likes: number;
-  /** A bejelentkezett felhasználó lájkolta-e ezt a hozzászólást. */
-  likedByMe: boolean;
+  /** Dislike-ok száma (0, amíg a vote oszlop nem létezik). */
+  dislikes: number;
+  /** A bejelentkezett felhasználó szavazata: 1 = lájk, -1 = dislike, 0 = nincs. */
+  myVote: 1 | -1 | 0;
   /** Szülő-hozzászólás azonosítója, ha ez egy válasz (null = fő hozzászólás). */
   parentId: number | null;
 }

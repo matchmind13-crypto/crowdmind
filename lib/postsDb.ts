@@ -211,8 +211,9 @@ export async function fetchComments(postId: number): Promise<FeedComment[]> {
       username: (r.user_id && names.get(r.user_id)) || FALLBACK_AUTHOR,
       ago: timeAgo(r.created_at),
       body: String(r.content ?? ''),
-      likes: like?.count ?? 0,
-      likedByMe: like?.likedByMe ?? false,
+      likes: like?.likes ?? 0,
+      dislikes: like?.dislikes ?? 0,
+      myVote: like?.myVote ?? 0,
       parentId: r.parent_id ?? null,
     };
   });

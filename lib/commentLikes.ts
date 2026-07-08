@@ -1,62 +1,95 @@
 import { supabase } from './supabase';
 
 /**
- * Komment-lájkok (comment_likes tábla).
- * A számlálók mindenkinek látszanak; lájkolni bejelentkezve lehet.
- * A tábla létrejöttéig a függvények kegyesen üres/„nem elérhető" választ adnak.
+ * Komment-szavazatok (comment_likes tábla, vote oszlop: 1 = lájk, -1 = dislike).
+ * A számlálók mindenkinek látszanak; szavazni bejelentkezve lehet.
+ * Amíg a vote oszlop nem létezik: a lájk a régi úton működik tovább,
+ * a dislike pedig udvarias "hamarosan" választ ad.
  */
 
-function tableMissing(message?: string | null) {
-  return !!message && /relation|does not exist|schema cache/i.test(message);
+function columnMissing(message?: string | null) {
+  return !!message && /vote|column|schema cache/i.test(message);
 }
 
-/** Lájk-számok + saját lájkok egy komment-listához (egyetlen lekérdezéssel). */
+export interface CommentVoteInfo {
+  likes: number;
+  dislikes: number;
+  myVote: 1 | -1 | 0;
+}
+
+/** Szavazat-számok + saját szavazat egy komment-listához (egy lekérdezéssel). */
 export async function fetchCommentLikes(
   commentIds: number[],
-): Promise<Map<number, { count: number; likedByMe: boolean }>> {
-  const result = new Map<number, { count: number; likedByMe: boolean }>();
+): Promise<Map<number, CommentVoteInfo>> {
+  const result = new Map<number, CommentVoteInfo>();
   if (commentIds.length === 0) return result;
   const { data: { session } } = await supabase.auth.getSession();
   const myId = session?.user?.id ?? null;
-  const { data, error } = await supabase
+
+  let rows: { comment_id: number; user_id: string; vote: number }[] | null = null;
+  const withVote = await supabase
     .from('comment_likes')
-    .select('comment_id,user_id')
+    .select('comment_id,user_id,vote')
     .in('comment_id', commentIds);
-  if (error) return result; // tábla még nincs → minden 0
-  ((data ?? []) as { comment_id: number; user_id: string }[]).forEach((r) => {
-    const cur = result.get(r.comment_id) ?? { count: 0, likedByMe: false };
-    cur.count += 1;
-    if (myId && r.user_id === myId) cur.likedByMe = true;
-    result.set(r.comment_id, cur);
+  if (!withVote.error) {
+    rows = (withVote.data ?? []) as any[];
+  } else if (columnMissing(withVote.error.message)) {
+    // Régi séma: még nincs vote oszlop — minden sor lájknak számít.
+    const legacy = await supabase
+      .from('comment_likes')
+      .select('comment_id,user_id')
+      .in('comment_id', commentIds);
+    if (legacy.error) return result;
+    rows = ((legacy.data ?? []) as any[]).map((r) => ({ ...r, vote: 1 }));
+  } else {
+    return result; // tábla sincs még
+  }
+
+  rows.forEach((r) => {
+    const cur = result.get(r.comment_id) ?? { likes: 0, dislikes: 0, myVote: 0 as const };
+    const entry: CommentVoteInfo = { ...cur };
+    if (r.vote === -1) entry.dislikes += 1;
+    else entry.likes += 1;
+    if (myId && r.user_id === myId) entry.myVote = r.vote === -1 ? -1 : 1;
+    result.set(r.comment_id, entry);
   });
   return result;
 }
 
-export async function toggleCommentLike(
+/** Szavazat beállítása: 1 = lájk, -1 = dislike, 0 = visszavonás. */
+export async function setCommentVote(
   commentId: number,
-  currentlyLiked: boolean,
-): Promise<{ liked: boolean; needsLogin?: boolean; unavailable?: boolean }> {
+  vote: 1 | -1 | 0,
+): Promise<{ ok: boolean; needsLogin?: boolean; unavailable?: boolean }> {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return { liked: currentlyLiked, needsLogin: true };
+  if (!session) return { ok: false, needsLogin: true };
 
-  if (currentlyLiked) {
+  if (vote === 0) {
     const { error } = await supabase
       .from('comment_likes')
       .delete()
       .eq('comment_id', commentId)
       .eq('user_id', session.user.id);
-    if (error) return { liked: true, unavailable: tableMissing(error.message) };
-    return { liked: false };
+    return error ? { ok: false, unavailable: columnMissing(error.message) } : { ok: true };
   }
 
-  const { error } = await (supabase.from('comment_likes') as any).insert({
-    comment_id: commentId,
-    user_id: session.user.id,
-  });
+  const { error } = await (supabase.from('comment_likes') as any).upsert(
+    { comment_id: commentId, user_id: session.user.id, vote },
+    { onConflict: 'comment_id,user_id' },
+  );
   if (error) {
-    // 23505 = már lájkoltad (pl. két fülön) — sikeresnek vesszük.
-    if (error.code === '23505') return { liked: true };
-    return { liked: false, unavailable: tableMissing(error.message) };
+    if (columnMissing(error.message)) {
+      // Régi séma: a lájk a régi (insert-alapú) úton még működik, a dislike nem.
+      if (vote === 1) {
+        const legacy = await (supabase.from('comment_likes') as any).insert({
+          comment_id: commentId,
+          user_id: session.user.id,
+        });
+        if (!legacy.error || legacy.error.code === '23505') return { ok: true };
+      }
+      return { ok: false, unavailable: true };
+    }
+    return { ok: false };
   }
-  return { liked: true };
+  return { ok: true };
 }
