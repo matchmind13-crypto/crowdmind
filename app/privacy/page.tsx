@@ -37,8 +37,8 @@ export default function PrivacyPage() {
           <p>
             A crowdmind.dev oldalt (a továbbiakban: CrowdMind) magánszemélyként üzemeltetem.
             Adatkezelési kérdésben a{' '}
-            <a href="mailto:fehercsanad4@gmail.com" className="text-accent-soft underline">
-              fehercsanad4@gmail.com
+            <a href="mailto:hello@crowdmind.dev" className="text-accent-soft underline">
+              hello@crowdmind.dev
             </a>{' '}
             címen érsz el.
           </p>
