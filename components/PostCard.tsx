@@ -3,9 +3,12 @@ import { useState, useEffect, useRef } from 'react';
 import { ChevronRight, Bookmark, Bell, Share2, MoreHorizontal, Eye, Layers, Trash2, Loader2 } from 'lucide-react';
 import { isSaved, toggleSaved } from '@/lib/savedPosts';
 import { isFollowingPost, toggleFollowPost } from '@/lib/postFollows';
+import { fetchContributionCounts } from '@/lib/credibility';
 import { supabase } from '@/lib/supabase';
 import { deleteOwnPost } from '@/lib/postsDb';
 import { UserBadge } from './UserBadge';
+import { CredibilityBadge } from './CredibilityBadge';
+import { ReportButton } from './ReportButton';
 import { PostTypeBadge } from './PostTypeBadge';
 import { MediaGallery } from './MediaGallery';
 import { CommunitySnapshot } from './CommunitySnapshot';
@@ -20,13 +23,19 @@ export function PostCard({ post }: { post: FeedPost }) {
   const [following, setFollowing] = useState(false);
   const [followMsg, setFollowMsg] = useState<string | null>(null);
   const [uid, setUid] = useState<string | null>(null);
+  const [authorContribs, setAuthorContribs] = useState<number | null>(null);
   useEffect(() => {
     let active = true;
     void isSaved(post.id).then((s) => { if (active) setSaved(s); });
     void isFollowingPost(post.id).then((f) => { if (active) setFollowing(f); });
     supabase.auth.getSession().then(({ data }) => { if (active) setUid(data.session?.user?.id ?? null); });
+    if (post.authorId) {
+      void fetchContributionCounts([post.authorId]).then((m) => {
+        if (active) setAuthorContribs(m.get(post.authorId!) ?? 0);
+      });
+    }
     return () => { active = false; };
-  }, [post.id]);
+  }, [post.id, post.authorId]);
 
   const isOwn = !!uid && post.authorId === uid;
 
@@ -67,6 +76,7 @@ export function PostCard({ post }: { post: FeedPost }) {
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         <PostTypeBadge type={post.type} />
         <UserBadge username={post.authorName} size="sm" />
+        {authorContribs !== null && <CredibilityBadge contributions={authorContribs} />}
         <span className="text-sm text-muted">· {post.ago}</span>
         <span className="inline-flex items-center gap-1 text-sm text-muted">
           · <Eye size={14} /> {formatCount(post.views)} megtekintés
@@ -91,9 +101,7 @@ export function PostCard({ post }: { post: FeedPost }) {
           {isOwn ? (
             <OwnPostMenu postId={post.id} />
           ) : (
-            <button className="grid h-9 w-9 place-items-center rounded-lg border border-line text-muted transition-colors hover:bg-hover hover:text-fg-soft">
-              <MoreHorizontal size={18} />
-            </button>
+            <ReportButton targetType="post" targetId={post.id} />
           )}
         </div>
       </div>

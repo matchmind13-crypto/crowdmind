@@ -2,9 +2,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ThumbsUp, MessageCircle, Share2, Trash2, Check, X, Loader2 } from 'lucide-react';
 import { UserBadge } from './UserBadge';
+import { CredibilityBadge } from './CredibilityBadge';
+import { ReportButton } from './ReportButton';
 import { supabase } from '@/lib/supabase';
 import { deleteOwnComment } from '@/lib/postsDb';
 import { toggleCommentLike } from '@/lib/commentLikes';
+import { fetchContributionCounts } from '@/lib/credibility';
 import { formatCount } from '@/lib/utils';
 import type { FeedComment } from '@/data/types';
 
@@ -16,6 +19,7 @@ export function CommentList({
   onDeleted?: (id: number) => void;
 }) {
   const [uid, setUid] = useState<string | null>(null);
+  const [contribs, setContribs] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     let active = true;
@@ -24,6 +28,15 @@ export function CommentList({
     });
     return () => { active = false; };
   }, []);
+
+  // Hitelesség-jelvényekhez: a kommentelők hozzájárulás-számai egy lekérdezéssel.
+  useEffect(() => {
+    let active = true;
+    const ids = comments.map((c) => c.userId).filter((id): id is string => !!id);
+    if (ids.length === 0) return;
+    void fetchContributionCounts(ids).then((m) => { if (active) setContribs(m); });
+    return () => { active = false; };
+  }, [comments]);
 
   // A legjobb érvek felül: lájk szerint csökkenő, azonos lájknál a frissebb elöl
   // (a bejövő lista már időrendben érkezik, a stabil rendezés ezt megtartja).
@@ -42,7 +55,13 @@ export function CommentList({
   return (
     <div className="mt-4 space-y-3">
       {sorted.map((c) => (
-        <CommentRow key={c.id} comment={c} isOwn={!!uid && c.userId === uid} onDeleted={onDeleted} />
+        <CommentRow
+          key={c.id}
+          comment={c}
+          isOwn={!!uid && c.userId === uid}
+          contributions={c.userId ? (contribs.get(c.userId) ?? null) : null}
+          onDeleted={onDeleted}
+        />
       ))}
     </div>
   );
@@ -51,10 +70,12 @@ export function CommentList({
 function CommentRow({
   comment,
   isOwn,
+  contributions,
   onDeleted,
 }: {
   comment: FeedComment;
   isOwn: boolean;
+  contributions: number | null;
   onDeleted?: (id: number) => void;
 }) {
   // Valódi, fiókhoz kötött lájk (comment_likes tábla), optimista frissítéssel.
@@ -92,6 +113,7 @@ function CommentRow({
     <div className="rounded-xl border border-line bg-card-2/60 p-3.5">
       <div className="flex items-center gap-2">
         <UserBadge username={comment.username} size="sm" />
+        {contributions !== null && <CredibilityBadge contributions={contributions} />}
         <span className="text-xs text-muted">· {comment.ago}</span>
       </div>
 
@@ -119,6 +141,7 @@ function CommentRow({
           <Share2 size={14} />
           Megosztás
         </button>
+        {!isOwn && <ReportButton targetType="comment" targetId={comment.id} variant="flag" />}
 
         {likeMsg && <span className="px-1.5 text-xs text-accent-soft">{likeMsg}</span>}
 
