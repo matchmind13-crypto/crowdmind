@@ -163,6 +163,14 @@ export function Sidebar() {
         </span>
       </button>
 
+      {/* Adatkezelés – GDPR tájékoztató */}
+      <Link
+        href="/privacy"
+        className="px-2 pb-1 text-xs text-muted transition-colors hover:text-fg-soft"
+      >
+        Adatkezelési tájékoztató
+      </Link>
+
       {pickerOpen && <CategoryPickerModal onClose={() => setPickerOpen(false)} />}
     </aside>
   );

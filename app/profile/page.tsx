@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { PanelCard, PanelHeader } from '@/components/PanelCard';
 import { StatCard } from '@/components/StatCard';
 import { PostCompactCard } from '@/components/PostCompactCard';
+import { AccountDataPanel } from '@/components/AccountDataPanel';
 import { useAuth } from '@/lib/useAuth';
 import { usePosts } from '@/lib/usePosts';
 import { supabase } from '@/lib/supabase';
@@ -86,6 +87,8 @@ export default function ProfilePage() {
               módosíthatod.
             </p>
           </PanelCard>
+
+          {user && <AccountDataPanel />}
         </>
       }
     >
