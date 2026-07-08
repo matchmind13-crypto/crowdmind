@@ -81,7 +81,8 @@ export default function PrivacyPage() {
             </li>
             <li>
               <span className="font-semibold text-fg">Vercel</span> — a weboldal tárhelye és
-              kiszolgálója.
+              kiszolgálója; emellett süti nélküli, anonim látogatottsági statisztikát mér
+              (oldalletöltések száma — személyes profil és nyomkövetés nélkül).
             </li>
             <li>
               <span className="font-semibold text-fg">Anthropic (Claude AI)</span> — az AI-elemzés

@@ -112,7 +112,11 @@ function CommentRow({
   return (
     <div className="rounded-xl border border-line bg-card-2/60 p-3.5">
       <div className="flex items-center gap-2">
-        <UserBadge username={comment.username} size="sm" />
+        <UserBadge
+          username={comment.username}
+          size="sm"
+          linkTo={comment.userId ? `/user/${encodeURIComponent(comment.username)}` : undefined}
+        />
         {contributions !== null && <CredibilityBadge contributions={contributions} />}
         <span className="text-xs text-muted">· {comment.ago}</span>
       </div>

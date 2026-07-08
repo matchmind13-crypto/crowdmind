@@ -100,7 +100,11 @@ export function PostCard({ post }: { post: FeedPost }) {
       {/* Meta sor + akciók */}
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         <PostTypeBadge type={post.type} />
-        <UserBadge username={post.authorName} size="sm" />
+        <UserBadge
+          username={post.authorName}
+          size="sm"
+          linkTo={post.authorId ? `/user/${encodeURIComponent(post.authorName)}` : undefined}
+        />
         {authorContribs !== null && <CredibilityBadge contributions={authorContribs} />}
         <span className="text-sm text-muted">· {post.ago}</span>
         <span className="inline-flex items-center gap-1 text-sm text-muted">

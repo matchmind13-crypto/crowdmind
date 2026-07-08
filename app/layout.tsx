@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 import { UsernameSetupModal } from '@/components/UsernameSetupModal';
 import { PrivacyConsent } from '@/components/PrivacyConsent';
@@ -48,6 +49,8 @@ export default function RootLayout({
         {children}
         <UsernameSetupModal />
         <PrivacyConsent />
+        {/* Süti nélküli, anonim látogatottság-mérés (Vercel Web Analytics). */}
+        <Analytics />
       </body>
     </html>
   );
