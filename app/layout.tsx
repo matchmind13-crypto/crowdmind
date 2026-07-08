@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { UsernameSetupModal } from '@/components/UsernameSetupModal';
+import { PrivacyConsent } from '@/components/PrivacyConsent';
 import { SITE_URL } from '@/lib/publicConfig';
 
 export const metadata: Metadata = {
@@ -46,6 +47,7 @@ export default function RootLayout({
       <body>
         {children}
         <UsernameSetupModal />
+        <PrivacyConsent />
       </body>
     </html>
   );

@@ -130,8 +130,8 @@ export default function PrivacyPage() {
           <p>
             Nyomkövető sütiket nem használunk. A böngésződ helyi tárolójában (localStorage) csak
             technikai beállítások vannak: a bejelentkezési munkameneted, a választott téma
-            (világos/sötét) és a legutóbbi látogatásod ideje (az „Üdv újra" sávhoz). Ezek a
-            készülékeden maradnak.
+            (világos/sötét), a legutóbbi látogatásod ideje (az „Üdv újra" sávhoz), valamint annak
+            ténye, hogy ezt a tájékoztatót elfogadtad. Ezek a készülékeden maradnak.
           </p>
         </section>
 
