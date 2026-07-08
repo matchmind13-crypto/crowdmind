@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Gauge, TrendingUp, ThumbsUp, ThumbsDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Gauge, TrendingUp, ThumbsUp, ThumbsDown, ArrowUpRight, ArrowDownRight, CalendarDays, ArrowRight } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { StatCard } from '@/components/StatCard';
@@ -100,6 +100,23 @@ export default function SentimentPage() {
           )}
         </div>
       </div>
+
+      {/* Megosztható napi index */}
+      <Link
+        href="/ma"
+        className="flex items-center gap-3 rounded-2xl border border-accent/30 bg-accent-strong/10 p-4 transition-colors hover:bg-accent-strong/15"
+      >
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-strong/20 text-accent-soft">
+          <CalendarDays size={18} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-fg">Napi közhangulat-index</span>
+          <span className="block text-xs text-muted">
+            A mai hangulat egyetlen megosztható oldalon — crowdmind.dev/ma
+          </span>
+        </span>
+        <ArrowRight size={16} className="shrink-0 text-accent-soft" />
+      </Link>
 
       {/* Kategóriánkénti bontás (valódi) */}
       <div className="rounded-2xl border border-line bg-card p-5">
