@@ -33,6 +33,9 @@ export interface FeedPost {
   neutralVotes: number;
   /** A szerző profilképe (null = anonim alap-ikon). */
   authorAvatar: string | null;
+  /** A csoport, ahová a téma tartozik (null = nincs csoportban). */
+  groupId: number | null;
+  groupName: string | null;
   /** Jóslatnál: mikor zárul le a szavazás (ISO); egyébként null. */
   resolveAt: string | null;
   /** Jóslatnál: a rögzített eredmény ('yes'/'no'); amíg nincs eldöntve, null. */

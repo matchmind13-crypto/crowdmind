@@ -1,9 +1,10 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Send, Loader2, LogIn, ImageIcon, Upload, X, Check } from 'lucide-react';
 import { createPost } from '@/lib/postsDb';
 import { uploadPostMedia } from '@/lib/uploadImage';
+import { fetchGroups, type GroupInfo } from '@/lib/groups';
 import { isVideoUrl } from '@/components/MediaGallery';
 import { CATEGORIES } from '@/lib/categories';
 import { useAuth } from '@/lib/useAuth';
@@ -27,6 +28,8 @@ export default function CreatePostPage() {
   const [body, setBody] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
   const [resolveAt, setResolveAt] = useState('');
+  const [groups, setGroups] = useState<GroupInfo[]>([]);
+  const [groupId, setGroupId] = useState<number | ''>('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -52,6 +55,12 @@ export default function CreatePostPage() {
     setUploading(false);
   }
 
+  useEffect(() => {
+    let active = true;
+    void fetchGroups().then((gs) => { if (active) setGroups(gs); });
+    return () => { active = false; };
+  }, []);
+
   async function handleSubmit() {
     if (!title.trim()) { setError('Adj címet a témának!'); return; }
     if (type === 'prediction') {
@@ -63,6 +72,7 @@ export default function CreatePostPage() {
     const res = await createPost({
       title, category, subcategory, type, body, mediaUrl,
       resolveAt: type === 'prediction' && resolveAt ? new Date(resolveAt).toISOString() : null,
+      groupId: groupId === '' ? null : groupId,
     });
     if (!res.ok) {
       setError(res.error ?? 'Hiba a mentéskor');
@@ -128,6 +138,24 @@ export default function CreatePostPage() {
               />
             </Field>
           </div>
+
+          {groups.length > 0 && (
+            <Field label="Csoport (opcionális)">
+              <select
+                value={groupId}
+                onChange={(e) => setGroupId(e.target.value === '' ? '' : Number(e.target.value))}
+                className="w-full rounded-xl border border-line bg-bg-elevated px-4 py-3 text-sm text-fg focus:border-accent/40 focus:outline-none"
+              >
+                <option value="">Nincs csoport — a nyilvános hírfolyamba</option>
+                {groups.map((g) => (
+                  <option key={g.id} value={g.id}>{g.name} ({g.members} tag)</option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-xs text-muted">
+                Ha csoportot választasz, a téma a csoport neve alatt jelenik meg — de a hírfolyamban is látható marad.
+              </p>
+            </Field>
+          )}
 
           <Field label="Poszt típusa">
             <div className="flex flex-wrap gap-2">

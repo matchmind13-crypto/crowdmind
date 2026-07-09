@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { timeAgo } from './timeAgo';
 import { fetchCommentLikes } from './commentLikes';
+import { fetchGroups } from './groups';
 import type { FeedPost, FeedComment, NotificationItem, PostType } from '@/data/types';
 
 const POST_TYPES: PostType[] = [
@@ -50,7 +51,7 @@ async function fetchVoteCounts(): Promise<Map<number, { yes: number; no: number;
   return counts;
 }
 
-function mapRow(p: any, commentsCount: number, names: Map<string, ProfileLite>, votes?: { yes: number; no: number; neutral: number }): FeedPost {
+function mapRow(p: any, commentsCount: number, names: Map<string, ProfileLite>, votes?: { yes: number; no: number; neutral: number }, groupNames?: Map<number, string>): FeedPost {
   return {
     id: p.id,
     category: [p.category || 'Általános', ...(p.subcategory ? [p.subcategory] : [])],
@@ -59,6 +60,8 @@ function mapRow(p: any, commentsCount: number, names: Map<string, ProfileLite>, 
     authorId: p.user_id ?? null,
     authorName: (p.user_id && names.get(p.user_id)?.username) || FALLBACK_AUTHOR,
     authorAvatar: (p.user_id && names.get(p.user_id)?.avatarUrl) || null,
+    groupId: p.group_id ?? null,
+    groupName: (p.group_id && groupNames?.get(p.group_id)) || null,
     ago: timeAgo(p.created_at),
     createdAt: p.created_at,
     views: p.views ?? 0,
@@ -88,11 +91,13 @@ export async function fetchFeedPosts(): Promise<FeedPost[]> {
     counts.set(c.post_id, (counts.get(c.post_id) ?? 0) + 1);
   });
 
-  const [names, voteCounts] = await Promise.all([
+  const [names, voteCounts, groups] = await Promise.all([
     resolveUsernames(posts.map((p) => p.user_id)),
     fetchVoteCounts(),
+    fetchGroups(),
   ]);
-  return posts.map((p) => mapRow(p, counts.get(p.id) ?? 0, names, voteCounts.get(p.id)));
+  const groupNames = new Map(groups.map((g) => [g.id, g.name]));
+  return posts.map((p) => mapRow(p, counts.get(p.id) ?? 0, names, voteCounts.get(p.id), groupNames));
 }
 
 /** Egyetlen poszt betöltése azonosító alapján (poszt-aloldalhoz). */
@@ -104,12 +109,13 @@ export async function fetchPostById(id: number): Promise<FeedPost | null> {
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!p) return null;
-  const [{ count }, names, voteCounts] = await Promise.all([
+  const [{ count }, names, voteCounts, groups] = await Promise.all([
     supabase.from('comments').select('id', { count: 'exact', head: true }).eq('post_id', id),
     resolveUsernames([(p as any).user_id]),
     fetchVoteCounts(),
+    fetchGroups(),
   ]);
-  return mapRow(p, count ?? 0, names, voteCounts.get(id));
+  return mapRow(p, count ?? 0, names, voteCounts.get(id), new Map(groups.map((g) => [g.id, g.name])));
 }
 
 export interface NewPostInput {
@@ -121,6 +127,8 @@ export interface NewPostInput {
   mediaUrl?: string;
   /** Jóslatnál: a lezárás időpontja (ISO). */
   resolveAt?: string | null;
+  /** Csoport, ahová a téma kerül (opcionális). */
+  groupId?: number | null;
 }
 
 /** Új poszt mentése. Ha a bővített oszlopok (type/subcategory/media) még
@@ -143,6 +151,7 @@ export async function createPost(input: NewPostInput): Promise<{ ok: boolean; er
     subcategory: input.subcategory?.trim() || null,
     media: input.mediaUrl?.trim() ? [input.mediaUrl.trim()] : null,
     ...(input.type === 'prediction' && input.resolveAt ? { resolve_at: input.resolveAt } : {}),
+    ...(input.groupId ? { group_id: input.groupId } : {}),
   };
 
   let { data: created, error } = await (supabase.from('posts') as any).insert(rich).select('id').single();

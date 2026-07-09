@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   Home, Compass, TrendingUp, Clock, Users, Bookmark, Bell,
-  Brain, GitCompareArrows, Gauge, Map, CalendarDays,
+  Brain, GitCompareArrows, Gauge, Map, CalendarDays, UsersRound,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -13,6 +13,7 @@ export interface NavItem {
 export const mainNav: NavItem[] = [
   { label: 'Kezdőlap', href: '/', icon: Home },
   { label: 'Felfedezés', href: '/discover', icon: Compass },
+  { label: 'Csoportok', href: '/csoportok', icon: UsersRound },
   { label: 'Trendek', href: '/trending', icon: TrendingUp },
   { label: 'Friss', href: '/fresh', icon: Clock },
   { label: 'Követett', href: '/following', icon: Users },
