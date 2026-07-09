@@ -26,7 +26,7 @@ export function PrivacyConsent() {
     }
   }, []);
 
-  if (!show || pathname === '/privacy' || pathname.startsWith('/embed')) return null;
+  if (!show || pathname === '/privacy' || pathname === '/szabalyzat' || pathname.startsWith('/embed')) return null;
 
   function accept() {
     try {
@@ -51,7 +51,11 @@ export function PrivacyConsent() {
           A CrowdMind csak a működéshez szükséges adatokat kezeli: a fiókodat, a tartalmaidat és a
           beállításaidat. <span className="font-semibold text-fg">Nyomkövető sütiket nem használunk,
           és az adataidat nem adjuk el senkinek.</span> Az oldal használatához kérjük, fogadd el az
-          adatkezelési tájékoztatót.
+          adatkezelési tájékoztatót és a{' '}
+          <Link href="/szabalyzat" className="text-accent-soft underline">
+            felhasználási szabályzatot
+          </Link>
+          .
         </p>
 
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">

@@ -147,6 +147,7 @@ export default function PrivacyPage() {
 
       <p className="mt-10 border-t border-line pt-5 text-xs text-muted">
         CrowdMind · A közösség véleménye, AI-val rendszerezve ·{' '}
+        <Link href="/szabalyzat" className="text-accent-soft underline">Felhasználási szabályzat</Link> ·{' '}
         <Link href="/" className="text-accent-soft underline">crowdmind.dev</Link>
       </p>
     </main>

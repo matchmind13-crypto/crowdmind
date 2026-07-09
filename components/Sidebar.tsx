@@ -163,13 +163,15 @@ export function Sidebar() {
         </span>
       </button>
 
-      {/* Adatkezelés – GDPR tájékoztató */}
-      <Link
-        href="/privacy"
-        className="px-2 pb-1 text-xs text-muted transition-colors hover:text-fg-soft"
-      >
-        Adatkezelési tájékoztató
-      </Link>
+      {/* Jogi oldalak */}
+      <div className="flex flex-wrap gap-x-3 px-2 pb-1 text-xs text-muted">
+        <Link href="/szabalyzat" className="transition-colors hover:text-fg-soft">
+          Szabályzat
+        </Link>
+        <Link href="/privacy" className="transition-colors hover:text-fg-soft">
+          Adatkezelés
+        </Link>
+      </div>
 
       {pickerOpen && <CategoryPickerModal onClose={() => setPickerOpen(false)} />}
     </aside>

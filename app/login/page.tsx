@@ -237,7 +237,11 @@ export default function LoginPage() {
 
       <p className="mt-6 max-w-sm text-center text-xs leading-relaxed text-muted">
         A regisztrációval elfogadod, hogy a felhasználóneved nyilvánosan megjelenik a
-        hozzászólásaid és témáid mellett, valamint az{' '}
+        hozzászólásaid és témáid mellett, valamint a{' '}
+        <Link href="/szabalyzat" className="text-accent-soft underline">
+          felhasználási szabályzatot
+        </Link>{' '}
+        és az{' '}
         <Link href="/privacy" className="text-accent-soft underline">
           adatkezelési tájékoztatót
         </Link>
