@@ -110,7 +110,8 @@ export async function POST(request: Request) {
   const voteRows = ((await votesRes.json().catch(() => [])) as any[]) ?? [];
   const yes = (post.yes_votes ?? 0) + voteRows.filter((v) => v.vote === 'yes').length;
   const no = (post.no_votes ?? 0) + voteRows.filter((v) => v.vote === 'no').length;
-  const votesTotal = yes + no;
+  const neutral = voteRows.filter((v) => v.vote === 'neutral').length;
+  const votesTotal = yes + no + neutral;
 
   // ---- GYORSÍTÓTÁR: ha van friss tárolt elemzés, azt adjuk vissza (0 Ft, azonnali) ----
   // Frissesség: a hozzászolás-szám nem változott ÉS a szavazatok nem mozdultak érdemben
@@ -155,7 +156,7 @@ export async function POST(request: Request) {
     `TÉMA CÍME: ${post.title}`,
     `KATEGÓRIA: ${post.category ?? 'Általános'}`,
     post.description ? `LEÍRÁS: ${String(post.description).slice(0, 2000)}` : null,
-    `SZAVAZATOK: ${yes} mellette, ${no} ellene`,
+    `SZAVAZATOK: ${yes} mellette, ${no} ellene, ${neutral} semleges`,
     comments.length > 0
       ? `HOZZÁSZÓLÁSOK (${comments.length} db):\n${comments.map((c, i) => `${i + 1}. ${c}`).join('\n')}`
       : 'HOZZÁSZÓLÁSOK: még nincs hozzászólás.',
@@ -177,7 +178,8 @@ export async function POST(request: Request) {
         'véleményed lenne: mindig "A közösség szerint...", "A legtöbb hozzászóló azt említi...", ' +
         '"A pozitív vélemények fő oka..." stílusban írj. Ha kevés az adat (kevés hozzászólás/szavazat), ' +
         'ezt jelezd őszintén az összegzésben, és óvatosan következtess. A hangulat-százalékokat a ' +
-        'szavazatokból ÉS a hozzászólások hangvételéből együtt becsüld; a három érték összege 100 legyen. ' +
+        'szavazatokból (mellette/ellene/SEMLEGES is!) ÉS a hozzászólások hangvételéből együtt becsüld; ' +
+        'a semleges szavazatok a bizonytalan/kivárós tábort jelzik. A három érték összege 100 legyen. ' +
         'Az ordog_ugyvedje mezőben a kisebbségi oldal LEGERŐSEBB érvét képviseld tisztességesen ' +
         '("A másik oldal legerősebb érve..." stílusban) — ez a CrowdMind buborék-ellenes funkciója: ' +
         'az olvasó a többségi vélemény mellett mindig lássa a legjobb ellenérvet is.',

@@ -9,45 +9,56 @@ const POST_TYPES: PostType[] = [
 
 const FALLBACK_AUTHOR = 'CrowdMind tag';
 
-/** user_id -> username tömeges feloldása a profiles táblából. */
-async function resolveUsernames(userIds: (string | null | undefined)[]): Promise<Map<string, string>> {
-  const names = new Map<string, string>();
+export interface ProfileLite {
+  username: string;
+  avatarUrl: string | null;
+}
+
+/** user_id -> {username, avatarUrl} tömeges feloldása a profiles táblából.
+ *  Ha az avatar_url oszlop még nem létezik, név-only módban megy tovább. */
+async function resolveUsernames(userIds: (string | null | undefined)[]): Promise<Map<string, ProfileLite>> {
+  const names = new Map<string, ProfileLite>();
   const unique = [...new Set(userIds.filter((x): x is string => Boolean(x)))];
   if (unique.length === 0) return names;
-  const { data } = await supabase
+  let { data, error } = await supabase
     .from('profiles')
-    .select('user_id,username')
+    .select('user_id,username,avatar_url')
     .in('user_id', unique);
-  (data ?? []).forEach((p) => {
-    const row = p as { user_id: string; username: string };
-    names.set(row.user_id, row.username);
+  if (error && /avatar_url|column|schema cache/i.test(error.message)) {
+    ({ data, error } = await supabase.from('profiles').select('user_id,username').in('user_id', unique));
+  }
+  ((data ?? []) as any[]).forEach((p) => {
+    names.set(p.user_id, { username: p.username, avatarUrl: p.avatar_url ?? null });
   });
   return names;
 }
 
-/** post_id -> {yes,no} a votes táblából. A posts.yes_votes/no_votes számlálók
- *  frissítését az RLS blokkolja, ezért a votes tábla az igazság forrása;
+/** post_id -> {yes,no,neutral} a votes táblából. A posts.yes_votes/no_votes
+ *  számlálók frissítését az RLS blokkolja, ezért a votes tábla az igazság forrása;
  *  a régi (számlálóval seedelt) posztok értékei alapként adódnak hozzá. */
-async function fetchVoteCounts(): Promise<Map<number, { yes: number; no: number }>> {
-  const counts = new Map<number, { yes: number; no: number }>();
+async function fetchVoteCounts(): Promise<Map<number, { yes: number; no: number; neutral: number }>> {
+  const counts = new Map<number, { yes: number; no: number; neutral: number }>();
   const { data } = await supabase.from('votes').select('post_id,vote');
   ((data ?? []) as any[]).forEach((v) => {
-    if (v.vote !== 'yes' && v.vote !== 'no') return; // régi formátumú sorok kihagyása
-    const c = counts.get(v.post_id) ?? { yes: 0, no: 0 };
-    if (v.vote === 'yes') c.yes += 1; else c.no += 1;
+    if (v.vote !== 'yes' && v.vote !== 'no' && v.vote !== 'neutral') return; // régi formátumú sorok kihagyása
+    const c = counts.get(v.post_id) ?? { yes: 0, no: 0, neutral: 0 };
+    if (v.vote === 'yes') c.yes += 1;
+    else if (v.vote === 'no') c.no += 1;
+    else c.neutral += 1;
     counts.set(v.post_id, c);
   });
   return counts;
 }
 
-function mapRow(p: any, commentsCount: number, names: Map<string, string>, votes?: { yes: number; no: number }): FeedPost {
+function mapRow(p: any, commentsCount: number, names: Map<string, ProfileLite>, votes?: { yes: number; no: number; neutral: number }): FeedPost {
   return {
     id: p.id,
     category: [p.category || 'Általános', ...(p.subcategory ? [p.subcategory] : [])],
     title: p.title,
     type: POST_TYPES.includes(p.type) ? p.type : 'question',
     authorId: p.user_id ?? null,
-    authorName: (p.user_id && names.get(p.user_id)) || FALLBACK_AUTHOR,
+    authorName: (p.user_id && names.get(p.user_id)?.username) || FALLBACK_AUTHOR,
+    authorAvatar: (p.user_id && names.get(p.user_id)?.avatarUrl) || null,
     ago: timeAgo(p.created_at),
     createdAt: p.created_at,
     views: p.views ?? 0,
@@ -56,6 +67,7 @@ function mapRow(p: any, commentsCount: number, names: Map<string, string>, votes
     commentsCount,
     yesVotes: (p.yes_votes ?? 0) + (votes?.yes ?? 0),
     noVotes: (p.no_votes ?? 0) + (votes?.no ?? 0),
+    neutralVotes: votes?.neutral ?? 0,
     resolveAt: p.resolve_at ?? null,
     outcome: p.outcome === 'yes' || p.outcome === 'no' ? p.outcome : null,
   };
@@ -213,7 +225,8 @@ export async function fetchComments(postId: number): Promise<FeedComment[]> {
     return {
       id: r.id,
       userId: r.user_id ?? null,
-      username: (r.user_id && names.get(r.user_id)) || FALLBACK_AUTHOR,
+      username: (r.user_id && names.get(r.user_id)?.username) || FALLBACK_AUTHOR,
+      avatarUrl: (r.user_id && names.get(r.user_id)?.avatarUrl) || null,
       ago: timeAgo(r.created_at),
       body: String(r.content ?? ''),
       likes: like?.likes ?? 0,
@@ -235,7 +248,7 @@ async function notifyPostOwner(postId: number, actorId: string, buildMessage: (t
     const owner = (post as any)?.user_id as string | null;
     if (!owner || owner === actorId) return; // saját magunknak nem küldünk
     const names = await resolveUsernames([actorId]);
-    const actorName = names.get(actorId) ?? FALLBACK_AUTHOR;
+    const actorName = names.get(actorId)?.username ?? FALLBACK_AUTHOR;
     await (supabase.from('notifications') as any).insert({
       user_id: owner,
       post_id: postId,
@@ -289,7 +302,7 @@ async function notifyReply(postId: number, parentId: number, actorId: string) {
     const owner = ((post as any)?.user_id as string | null) ?? null;
     const parentAuthor = ((parent as any)?.user_id as string | null) ?? null;
     const title = String((post as any)?.title ?? '');
-    const actorName = names.get(actorId) ?? FALLBACK_AUTHOR;
+    const actorName = names.get(actorId)?.username ?? FALLBACK_AUTHOR;
 
     const rows: { user_id: string; post_id: number; message: string; read: boolean }[] = [];
     if (parentAuthor && parentAuthor !== actorId) {
@@ -331,7 +344,7 @@ async function notifyPostFollowers(postId: number, actorId: string) {
       .filter((id) => id !== owner);
     if (targets.length === 0) return;
     const names = await resolveUsernames([actorId]);
-    const actorName = names.get(actorId) ?? FALLBACK_AUTHOR;
+    const actorName = names.get(actorId)?.username ?? FALLBACK_AUTHOR;
     await (supabase.from('notifications') as any).insert(
       targets.map((user_id) => ({
         user_id,
@@ -348,7 +361,7 @@ async function notifyPostFollowers(postId: number, actorId: string) {
 /** Szavazat leadása a meglévő /api/vote végponton (duplikátumot a DB tiltja).
  *  A `standing` (pl. "62% mellette") bekerül a téma gazdájának értesítésébe —
  *  így az értesítés önmagában is elmondja, merre fordult a téma. */
-export async function castVote(postId: number, vote: 'yes' | 'no', standing?: string): Promise<{ ok: boolean; already?: boolean; needsLogin?: boolean; error?: string }> {
+export async function castVote(postId: number, vote: 'yes' | 'no' | 'neutral', standing?: string): Promise<{ ok: boolean; already?: boolean; needsLogin?: boolean; error?: string }> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { ok: false, needsLogin: true };
   const res = await fetch('/api/vote', {

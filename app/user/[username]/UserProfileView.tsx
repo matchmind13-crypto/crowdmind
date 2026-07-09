@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 interface ProfileInfo {
   userId: string;
   username: string;
+  avatarUrl: string | null;
 }
 
 /** Publikus profil-nézet: bárki megnézheti bárki témáit és aktivitását. */
@@ -29,14 +30,21 @@ export function UserProfileView({ username }: { username: string }) {
   useEffect(() => {
     let active = true;
     (async () => {
-      const { data } = await supabase
+      let { data, error } = await supabase
         .from('profiles')
-        .select('user_id,username')
+        .select('user_id,username,avatar_url')
         .eq('username', username)
         .maybeSingle();
+      if (error && /avatar_url|column|schema cache/i.test(error.message)) {
+        ({ data, error } = await supabase.from('profiles').select('user_id,username').eq('username', username).maybeSingle());
+      }
       if (!active) return;
       if (!data) { setProfile(null); return; }
-      setProfile({ userId: (data as any).user_id, username: (data as any).username });
+      setProfile({
+        userId: (data as any).user_id,
+        username: (data as any).username,
+        avatarUrl: ((data as any).avatar_url as string | null) ?? null,
+      });
     })();
     return () => { active = false; };
   }, [username]);
@@ -143,9 +151,18 @@ export function UserProfileView({ username }: { username: string }) {
         <>
           {/* Profil-fejléc */}
           <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-line bg-card p-5">
-            <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-accent-strong/15 text-accent-soft ring-1 ring-accent/25">
-              <UserIcon size={28} />
-            </span>
+            {profile.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profile.avatarUrl}
+                alt=""
+                className="h-16 w-16 shrink-0 rounded-2xl object-cover ring-1 ring-accent/25"
+              />
+            ) : (
+              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-accent-strong/15 text-accent-soft ring-1 ring-accent/25">
+                <UserIcon size={28} />
+              </span>
+            )}
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-bold text-fg">{profile.username}</h1>

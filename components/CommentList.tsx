@@ -222,6 +222,7 @@ function CommentRow({
         <UserBadge
           username={comment.username}
           size="sm"
+          avatarUrl={comment.avatarUrl}
           linkTo={comment.userId ? `/user/${encodeURIComponent(comment.username)}` : undefined}
         />
         {contributions !== null && <CredibilityBadge contributions={contributions} />}

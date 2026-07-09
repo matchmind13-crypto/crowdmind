@@ -8,6 +8,7 @@ import { PanelCard, PanelHeader } from '@/components/PanelCard';
 import { StatCard } from '@/components/StatCard';
 import { PostCompactCard } from '@/components/PostCompactCard';
 import { AccountDataPanel } from '@/components/AccountDataPanel';
+import { AvatarUploader } from '@/components/AvatarUploader';
 import { PasswordChanger } from '@/components/PasswordChanger';
 import { useAuth } from '@/lib/useAuth';
 import { usePosts } from '@/lib/usePosts';
@@ -102,6 +103,9 @@ export default function ProfilePage() {
         title={loading ? 'Betöltés…' : (user?.username ?? 'Profil')}
         subtitle="A fiókod, aktivitásod és a témáid egy helyen"
       />
+
+      {/* Profilkép */}
+      {user && <AvatarUploader userId={user.id} />}
 
       {/* Felhasználónév-szerkesztő */}
       {user && <UsernameEditor currentUsername={user.username} userId={user.id} />}

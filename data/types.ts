@@ -29,6 +29,10 @@ export interface FeedPost {
   commentsCount: number;
   yesVotes: number;
   noVotes: number;
+  /** Semleges szavazatok száma (szürkén jelenik meg a sávon). */
+  neutralVotes: number;
+  /** A szerző profilképe (null = anonim alap-ikon). */
+  authorAvatar: string | null;
   /** Jóslatnál: mikor zárul le a szavazás (ISO); egyébként null. */
   resolveAt: string | null;
   /** Jóslatnál: a rögzített eredmény ('yes'/'no'); amíg nincs eldöntve, null. */
@@ -50,6 +54,8 @@ export interface FeedComment {
   myVote: 1 | -1 | 0;
   /** Szülő-hozzászólás azonosítója, ha ez egy válasz (null = fő hozzászólás). */
   parentId: number | null;
+  /** A hozzászóló profilképe (null = anonim alap-ikon). */
+  avatarUrl: string | null;
 }
 
 /** Valódi értesítés a notifications táblából. */

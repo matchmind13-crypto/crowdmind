@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { ChevronRight, Bookmark, Bell, Share2, Check, MoreHorizontal, Eye, Layers, Trash2, Loader2 } from 'lucide-react';
 import { isSaved, toggleSaved } from '@/lib/savedPosts';
@@ -84,13 +85,22 @@ export function PostCard({ post }: { post: FeedPost }) {
 
   return (
     <article className="rounded-2xl border border-line bg-card p-5 sm:p-6">
-      {/* Kategória breadcrumb */}
+      {/* Kategória breadcrumb — az első elem a csoport oldalára visz */}
       <div className="flex items-center gap-1.5 text-sm text-muted">
         <Layers size={15} className="text-accent-soft" />
         {post.category.map((c, i) => (
           <span key={i} className="flex items-center gap-1.5">
             {i > 0 && <ChevronRight size={14} className="text-line" />}
-            <span className={i === post.category.length - 1 ? 'text-fg-soft' : ''}>{c}</span>
+            {i === 0 ? (
+              <Link
+                href={`/csoport/${encodeURIComponent(c)}`}
+                className="font-medium text-fg-soft transition-colors hover:text-accent-soft hover:underline"
+              >
+                {c}
+              </Link>
+            ) : (
+              <span className={i === post.category.length - 1 ? 'text-fg-soft' : ''}>{c}</span>
+            )}
           </span>
         ))}
       </div>
@@ -104,6 +114,7 @@ export function PostCard({ post }: { post: FeedPost }) {
         <UserBadge
           username={post.authorName}
           size="sm"
+          avatarUrl={post.authorAvatar}
           linkTo={post.authorId ? `/user/${encodeURIComponent(post.authorName)}` : undefined}
         />
         {authorContribs !== null && <CredibilityBadge contributions={authorContribs} />}
@@ -165,6 +176,7 @@ export function PostCard({ post }: { post: FeedPost }) {
         postId={post.id}
         yesVotes={post.yesVotes}
         noVotes={post.noVotes}
+        neutralVotes={post.neutralVotes}
         commentsCount={post.commentsCount}
         locked={Boolean(post.outcome || (post.resolveAt && new Date(post.resolveAt).getTime() <= Date.now()))}
       />

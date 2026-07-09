@@ -12,25 +12,37 @@ export function UserBadge({
   size = 'md',
   className,
   linkTo,
+  avatarUrl,
 }: {
   username: string;
   size?: 'sm' | 'md';
   className?: string;
   linkTo?: string;
+  /** Profilkép URL — ha nincs, az anonim alap-ikon jelenik meg. */
+  avatarUrl?: string | null;
 }) {
   const avatarSize = size === 'sm' ? 'h-7 w-7' : 'h-8 w-8';
   const iconSize = size === 'sm' ? 14 : 16;
 
   const content = (
     <>
-      <span
-        className={cn(
-          'grid place-items-center rounded-full bg-hover text-muted ring-1 ring-line',
-          avatarSize,
-        )}
-      >
-        <UserIcon size={iconSize} />
-      </span>
+      {avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={avatarUrl}
+          alt=""
+          className={cn('rounded-full object-cover ring-1 ring-line', avatarSize)}
+        />
+      ) : (
+        <span
+          className={cn(
+            'grid place-items-center rounded-full bg-hover text-muted ring-1 ring-line',
+            avatarSize,
+          )}
+        >
+          <UserIcon size={iconSize} />
+        </span>
+      )}
       <span className="text-sm font-medium text-fg-soft">{username}</span>
     </>
   );

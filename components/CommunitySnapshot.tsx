@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { ThumbsUp, ThumbsDown, HelpCircle, ChartLine, ChevronDown } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Minus, ChartLine, ChevronDown } from 'lucide-react';
 import { castVote } from '@/lib/postsDb';
 import { OpinionTimeline } from './OpinionTimeline';
 import { formatCount } from '@/lib/utils';
@@ -14,27 +14,31 @@ export function CommunitySnapshot({
   postId,
   yesVotes,
   noVotes,
+  neutralVotes = 0,
   commentsCount,
   locked = false,
 }: {
   postId: number;
   yesVotes: number;
   noVotes: number;
+  neutralVotes?: number;
   commentsCount: number;
   /** Lezárt jóslatnál true — a szavazás-gombok tiltva. */
   locked?: boolean;
 }) {
   const [yes, setYes] = useState(yesVotes);
   const [no, setNo] = useState(noVotes);
+  const [neutral, setNeutral] = useState(neutralVotes);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; needsLogin?: boolean } | null>(null);
   const [timelineOpen, setTimelineOpen] = useState(false);
 
-  const total = yes + no;
+  const total = yes + no + neutral;
   const forPct = total > 0 ? Math.round((yes / total) * 100) : 0;
-  const againstPct = total > 0 ? 100 - forPct : 0;
+  const neutralPct = total > 0 ? Math.round((neutral / total) * 100) : 0;
+  const againstPct = total > 0 ? Math.max(0, 100 - forPct - neutralPct) : 0;
 
-  async function vote(v: 'yes' | 'no') {
+  async function vote(v: 'yes' | 'no' | 'neutral') {
     if (busy) return;
     if (locked) {
       setMsg({ text: 'Ez a jóslat lezárult — már nem lehet rá szavazni.' });
@@ -48,7 +52,9 @@ export function CommunitySnapshot({
     const standing = `${Math.round((nYes / nTotal) * 100)}% mellette (${nTotal} szavazat)`;
     const res = await castVote(postId, v, standing);
     if (res.ok) {
-      if (v === 'yes') setYes((n) => n + 1); else setNo((n) => n + 1);
+      if (v === 'yes') setYes((n) => n + 1);
+      else if (v === 'no') setNo((n) => n + 1);
+      else setNeutral((n) => n + 1);
       setMsg({ text: 'Szavazatod rögzítve. Köszönjük!' });
     } else if (res.already) {
       setMsg({ text: 'Erre a posztra már szavaztál.' });
@@ -71,9 +77,10 @@ export function CommunitySnapshot({
         </span>
       </div>
 
-      {/* Arány-sáv */}
+      {/* Arány-sáv: zöld (mellette) / szürke (semleges) / piros (ellene) */}
       <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-line">
         <div className="bg-positive transition-all" style={{ width: `${forPct}%` }} />
+        <div className="bg-neutral/70 transition-all" style={{ width: `${neutralPct}%` }} />
         <div className="bg-negative transition-all" style={{ width: `${againstPct}%` }} />
       </div>
 
@@ -87,10 +94,15 @@ export function CommunitySnapshot({
           <span className="font-semibold text-fg">{forPct}%</span>
           <span className="text-muted">Mellette</span>
         </button>
-        <span className="inline-flex items-center gap-1.5 px-2 py-1">
-          <HelpCircle size={13} className="text-neutral" />
-          <span className="text-muted">{locked ? 'A szavazás lezárult' : 'Kattints és szavazz'}</span>
-        </span>
+        <button
+          onClick={() => void vote('neutral')}
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-hover disabled:opacity-60"
+        >
+          <Minus size={13} className="text-neutral" />
+          <span className="font-semibold text-fg">{neutralPct}%</span>
+          <span className="text-muted">{locked ? 'Lezárult' : 'Semleges'}</span>
+        </button>
         <button
           onClick={() => void vote('no')}
           disabled={busy}

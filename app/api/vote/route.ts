@@ -54,6 +54,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: errorData.message || 'Hiba a szavazás mentésekor' }, { status: 500 })
   }
 
+  // Semleges szavazatnál nincs számláló-frissítés (azt csak a votes tábla tartja).
+  if (vote === 'neutral') {
+    return NextResponse.json({ success: true })
+  }
+
   const field = vote === 'yes' ? 'yes_votes' : 'no_votes'
 
   const getPost = await fetch(`${supabaseUrl}/rest/v1/posts?id=eq.${post_id}`, {
