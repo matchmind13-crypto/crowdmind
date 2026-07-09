@@ -9,6 +9,7 @@ const META: Record<PostType, { label: string; className: string }> = {
   poll:         { label: 'Szavazás',        className: 'bg-indigo-500/15 text-indigo-300 ring-indigo-500/30' },
   media:        { label: 'Média',           className: 'bg-pink-500/15 text-pink-300 ring-pink-500/30' },
   appreciation: { label: 'Appreciation',    className: 'bg-accent-strong/20 text-accent-soft ring-accent/30' },
+  prediction:   { label: '🎯 Jóslat',       className: 'bg-amber-500/15 text-amber-300 ring-amber-500/30' },
 };
 
 export function PostTypeBadge({ type }: { type: PostType }) {

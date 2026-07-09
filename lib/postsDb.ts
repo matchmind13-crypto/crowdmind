@@ -4,7 +4,7 @@ import { fetchCommentLikes } from './commentLikes';
 import type { FeedPost, FeedComment, NotificationItem, PostType } from '@/data/types';
 
 const POST_TYPES: PostType[] = [
-  'question', 'debate', 'opinion', 'experience', 'comparison', 'poll', 'media', 'appreciation',
+  'question', 'debate', 'opinion', 'experience', 'comparison', 'poll', 'media', 'appreciation', 'prediction',
 ];
 
 const FALLBACK_AUTHOR = 'CrowdMind tag';
@@ -56,6 +56,8 @@ function mapRow(p: any, commentsCount: number, names: Map<string, string>, votes
     commentsCount,
     yesVotes: (p.yes_votes ?? 0) + (votes?.yes ?? 0),
     noVotes: (p.no_votes ?? 0) + (votes?.no ?? 0),
+    resolveAt: p.resolve_at ?? null,
+    outcome: p.outcome === 'yes' || p.outcome === 'no' ? p.outcome : null,
   };
 }
 
@@ -105,6 +107,8 @@ export interface NewPostInput {
   type: PostType;
   body: string;
   mediaUrl?: string;
+  /** Jóslatnál: a lezárás időpontja (ISO). */
+  resolveAt?: string | null;
 }
 
 /** Új poszt mentése. Ha a bővített oszlopok (type/subcategory/media) még
@@ -126,6 +130,7 @@ export async function createPost(input: NewPostInput): Promise<{ ok: boolean; er
     type: input.type,
     subcategory: input.subcategory?.trim() || null,
     media: input.mediaUrl?.trim() ? [input.mediaUrl.trim()] : null,
+    ...(input.type === 'prediction' && input.resolveAt ? { resolve_at: input.resolveAt } : {}),
   };
 
   let { data: created, error } = await (supabase.from('posts') as any).insert(rich).select('id').single();

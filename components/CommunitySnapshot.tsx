@@ -15,11 +15,14 @@ export function CommunitySnapshot({
   yesVotes,
   noVotes,
   commentsCount,
+  locked = false,
 }: {
   postId: number;
   yesVotes: number;
   noVotes: number;
   commentsCount: number;
+  /** Lezárt jóslatnál true — a szavazás-gombok tiltva. */
+  locked?: boolean;
 }) {
   const [yes, setYes] = useState(yesVotes);
   const [no, setNo] = useState(noVotes);
@@ -33,6 +36,10 @@ export function CommunitySnapshot({
 
   async function vote(v: 'yes' | 'no') {
     if (busy) return;
+    if (locked) {
+      setMsg({ text: 'Ez a jóslat lezárult — már nem lehet rá szavazni.' });
+      return;
+    }
     setBusy(true);
     setMsg(null);
     // Az új állás kiszámítása a szavazat UTÁN — ez kerül az értesítésbe.
@@ -82,7 +89,7 @@ export function CommunitySnapshot({
         </button>
         <span className="inline-flex items-center gap-1.5 px-2 py-1">
           <HelpCircle size={13} className="text-neutral" />
-          <span className="text-muted">Kattints és szavazz</span>
+          <span className="text-muted">{locked ? 'A szavazás lezárult' : 'Kattints és szavazz'}</span>
         </span>
         <button
           onClick={() => void vote('no')}

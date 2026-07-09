@@ -12,6 +12,7 @@ import { CredibilityBadge } from './CredibilityBadge';
 import { ReportButton } from './ReportButton';
 import { PostTypeBadge } from './PostTypeBadge';
 import { MediaGallery } from './MediaGallery';
+import { PredictionStatus } from './PredictionStatus';
 import { CommunitySnapshot } from './CommunitySnapshot';
 import { CollapsibleComments } from './CollapsibleComments';
 import { CollapsibleAIAnalysis } from './CollapsibleAIAnalysis';
@@ -156,12 +157,16 @@ export function PostCard({ post }: { post: FeedPost }) {
       {/* Média */}
       <MediaGallery images={post.media} />
 
+      {/* Jóslat-státusz (csak jóslat-témáknál jelenik meg) */}
+      <PredictionStatus postId={post.id} resolveAt={post.resolveAt} outcome={post.outcome} />
+
       {/* Közösség egy pillantásban – valódi szavazással */}
       <CommunitySnapshot
         postId={post.id}
         yesVotes={post.yesVotes}
         noVotes={post.noVotes}
         commentsCount={post.commentsCount}
+        locked={Boolean(post.outcome || (post.resolveAt && new Date(post.resolveAt).getTime() <= Date.now()))}
       />
 
       {/* Lenyitható panelek: előbb hozzászólások, alatta AI elemzés */}

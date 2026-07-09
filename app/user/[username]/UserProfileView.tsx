@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { User as UserIcon, UserX, FileText, MessagesSquare, ThumbsUp, CalendarDays, Plus, Sprout, Sparkles, Award } from 'lucide-react';
+import { User as UserIcon, UserX, FileText, MessagesSquare, ThumbsUp, CalendarDays, Plus, Sprout, Sparkles, Award, Target } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { PanelCard, PanelHeader } from '@/components/PanelCard';
 import { StatCard } from '@/components/StatCard';
 import { PostCompactCard } from '@/components/PostCompactCard';
 import { CredibilityBadge } from '@/components/CredibilityBadge';
 import { usePosts } from '@/lib/usePosts';
+import { fetchPredictionRecord } from '@/lib/predictions';
 import { supabase } from '@/lib/supabase';
 
 interface ProfileInfo {
@@ -23,6 +24,7 @@ export function UserProfileView({ username }: { username: string }) {
   const [commentsCount, setCommentsCount] = useState<number | null>(null);
   const [votesCount, setVotesCount] = useState<number | null>(null);
   const [firstActivity, setFirstActivity] = useState<string | null>(null);
+  const [predictions, setPredictions] = useState<{ correct: number; total: number } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -53,6 +55,8 @@ export function UserProfileView({ username }: { username: string }) {
       setVotesCount(v.count ?? 0);
       const firstCommentAt = ((firstComment.data ?? []) as any[])[0]?.created_at as string | undefined;
       setFirstActivity(firstCommentAt ?? null);
+      const rec = await fetchPredictionRecord(profile.userId);
+      if (active) setPredictions(rec);
     })();
     return () => { active = false; };
   }, [profile]);
@@ -146,6 +150,15 @@ export function UserProfileView({ username }: { username: string }) {
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-bold text-fg">{profile.username}</h1>
                 {commentsCount !== null && <CredibilityBadge contributions={contributions} />}
+                {predictions !== null && predictions.total > 0 && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-400"
+                    title="Eldöntött jóslatokon elért találatok"
+                  >
+                    <Target size={11} />
+                    Igazam lett: {predictions.correct}/{predictions.total}
+                  </span>
+                )}
               </div>
               {firstSeen && (
                 <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">

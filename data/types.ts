@@ -10,7 +10,8 @@ export type PostType =
   | 'comparison'    // Összehasonlítás
   | 'poll'          // Szavazás
   | 'media'         // Média poszt
-  | 'appreciation'; // Elismerés / értékelés
+  | 'appreciation'  // Elismerés / értékelés
+  | 'prediction';   // Jóslat – lezárási dátummal és eredménnyel
 
 /** Adatbázisból betöltött poszt, a feedben megjelenítendő formában. */
 export interface FeedPost {
@@ -28,6 +29,10 @@ export interface FeedPost {
   commentsCount: number;
   yesVotes: number;
   noVotes: number;
+  /** Jóslatnál: mikor zárul le a szavazás (ISO); egyébként null. */
+  resolveAt: string | null;
+  /** Jóslatnál: a rögzített eredmény ('yes'/'no'); amíg nincs eldöntve, null. */
+  outcome: 'yes' | 'no' | null;
 }
 
 /** Adatbázisból betöltött hozzászólás. */

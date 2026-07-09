@@ -75,8 +75,44 @@ export async function GET(request: Request) {
       };
     });
 
+    // Lezárásra váró jóslatok: a határidő letelt, de még nincs eredmény.
+    let pendingPredictions: { id: number; title: string; resolveAt: string; yes: number; no: number }[] = [];
+    try {
+      const { data: preds } = await admin
+        .from('posts')
+        .select('id,title,resolve_at,yes_votes,no_votes')
+        .not('resolve_at', 'is', null)
+        .is('outcome', null)
+        .lte('resolve_at', new Date().toISOString())
+        .order('resolve_at', { ascending: true });
+      const rows = (preds ?? []) as any[];
+      if (rows.length > 0) {
+        const { data: voteRows } = await admin
+          .from('votes')
+          .select('post_id,vote')
+          .in('post_id', rows.map((p) => p.id));
+        const counts = new Map<number, { yes: number; no: number }>();
+        ((voteRows ?? []) as any[]).forEach((v) => {
+          if (v.vote !== 'yes' && v.vote !== 'no') return;
+          const c = counts.get(v.post_id) ?? { yes: 0, no: 0 };
+          if (v.vote === 'yes') c.yes += 1; else c.no += 1;
+          counts.set(v.post_id, c);
+        });
+        pendingPredictions = rows.map((p) => ({
+          id: p.id,
+          title: p.title,
+          resolveAt: p.resolve_at,
+          yes: (p.yes_votes ?? 0) + (counts.get(p.id)?.yes ?? 0),
+          no: (p.no_votes ?? 0) + (counts.get(p.id)?.no ?? 0),
+        }));
+      }
+    } catch {
+      // az oszlopok még nem léteznek — jóslat-szekció nélkül megyünk
+    }
+
     return NextResponse.json({
       reports: enriched,
+      pendingPredictions,
       stats: {
         users: profiles.count ?? 0,
         posts: posts.count ?? 0,

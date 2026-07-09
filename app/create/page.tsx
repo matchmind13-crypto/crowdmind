@@ -15,6 +15,7 @@ const TYPE_OPTIONS: { value: PostType; label: string }[] = [
   { value: 'debate', label: 'Vita' },
   { value: 'experience', label: 'Tapasztalat' },
   { value: 'comparison', label: 'Összehasonlítás' },
+  { value: 'prediction', label: '🎯 Jóslat' },
 ];
 
 export default function CreatePostPage() {
@@ -25,6 +26,7 @@ export default function CreatePostPage() {
   const [type, setType] = useState<PostType>('question');
   const [body, setBody] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
+  const [resolveAt, setResolveAt] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -52,9 +54,16 @@ export default function CreatePostPage() {
 
   async function handleSubmit() {
     if (!title.trim()) { setError('Adj címet a témának!'); return; }
+    if (type === 'prediction') {
+      if (!resolveAt) { setError('Jóslatnál add meg, mikor derül ki az eredmény!'); return; }
+      if (new Date(resolveAt).getTime() <= Date.now()) { setError('A lezárás időpontja a jövőben legyen!'); return; }
+    }
     setSaving(true);
     setError('');
-    const res = await createPost({ title, category, subcategory, type, body, mediaUrl });
+    const res = await createPost({
+      title, category, subcategory, type, body, mediaUrl,
+      resolveAt: type === 'prediction' && resolveAt ? new Date(resolveAt).toISOString() : null,
+    });
     if (!res.ok) {
       setError(res.error ?? 'Hiba a mentéskor');
       setSaving(false);
@@ -147,6 +156,22 @@ export default function CreatePostPage() {
               className="w-full resize-y rounded-xl border border-line bg-bg-elevated px-4 py-3 text-sm leading-relaxed text-fg placeholder:text-muted focus:border-accent/40 focus:outline-none focus:ring-2 focus:ring-accent/20"
             />
           </Field>
+
+          {type === 'prediction' && (
+            <Field label="Mikor derül ki az eredmény? 🎯">
+              <input
+                type="datetime-local"
+                value={resolveAt}
+                onChange={(e) => setResolveAt(e.target.value)}
+                min={new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16)}
+                className="w-full rounded-xl border border-line bg-bg-elevated px-4 py-3 text-sm text-fg focus:border-accent/40 focus:outline-none focus:ring-2 focus:ring-accent/20"
+              />
+              <p className="mt-1.5 text-xs text-muted">
+                Eddig lehet szavazni. A határidő után az admin rögzíti, mi lett a valóság — és aki
+                eltalálta, „Igazam lett" találatot kap a profiljára.
+              </p>
+            </Field>
+          )}
 
           <Field label="Kép vagy videó (opcionális)">
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" className="hidden" onChange={(e) => void handleFile(e)} />

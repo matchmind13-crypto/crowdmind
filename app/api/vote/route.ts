@@ -20,6 +20,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing post_id, vote or user_id' }, { status: 400 })
   }
 
+  // Jóslat-őr: a lezárási időpont után (vagy eldöntött eredménynél) nincs több szavazat.
+  try {
+    const guardRes = await fetch(
+      `${supabaseUrl}/rest/v1/posts?id=eq.${post_id}&select=resolve_at,outcome`,
+      { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+    )
+    const guardRows = await guardRes.json()
+    const guard = Array.isArray(guardRows) ? guardRows[0] : null
+    if (guard?.outcome || (guard?.resolve_at && new Date(guard.resolve_at).getTime() <= Date.now())) {
+      return NextResponse.json({ error: 'Ez a jóslat lezárult — már nem lehet rá szavazni.' }, { status: 403 })
+    }
+  } catch {
+    // ha az oszlopok még nem léteznek, a szavazás a régi módon megy tovább
+  }
+
   const voteResponse = await fetch(`${supabaseUrl}/rest/v1/votes`, {
     method: 'POST',
     headers: {

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { User as UserIcon, LogIn, LogOut, FileText, MessagesSquare, ThumbsUp, Pencil, Check, X, Loader2 } from 'lucide-react';
+import { User as UserIcon, LogIn, LogOut, FileText, MessagesSquare, ThumbsUp, Pencil, Check, X, Loader2, Target } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { PanelCard, PanelHeader } from '@/components/PanelCard';
@@ -11,6 +11,7 @@ import { AccountDataPanel } from '@/components/AccountDataPanel';
 import { PasswordChanger } from '@/components/PasswordChanger';
 import { useAuth } from '@/lib/useAuth';
 import { usePosts } from '@/lib/usePosts';
+import { fetchPredictionRecord } from '@/lib/predictions';
 import { supabase } from '@/lib/supabase';
 
 /** Profil – saját adatok, statisztikák, témák; felhasználónév-módosítás. Valódi adat. */
@@ -19,19 +20,22 @@ export default function ProfilePage() {
   const { posts } = usePosts();
   const [myComments, setMyComments] = useState<number | null>(null);
   const [myVotes, setMyVotes] = useState<number | null>(null);
+  const [myPredictions, setMyPredictions] = useState<{ correct: number; total: number } | null>(null);
 
   // Saját aktivitás betöltése (valódi számok az adatbázisból)
   useEffect(() => {
     if (!user) return;
     let active = true;
     (async () => {
-      const [c, v] = await Promise.all([
+      const [c, v, rec] = await Promise.all([
         supabase.from('comments').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('votes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        fetchPredictionRecord(user.id),
       ]);
       if (active) {
         setMyComments(c.count ?? 0);
         setMyVotes(v.count ?? 0);
+        setMyPredictions(rec);
       }
     })();
     return () => { active = false; };
@@ -106,10 +110,13 @@ export default function ProfilePage() {
       {user && <PasswordChanger />}
 
       {/* Statisztikák (valódi adat) */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className={`grid gap-3 ${myPredictions && myPredictions.total > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
         <StatCard icon={FileText} value={posts ? myPosts.length : '…'} label="Témáid" />
         <StatCard icon={MessagesSquare} value={myComments ?? '…'} label="Hozzászólásod" />
         <StatCard icon={ThumbsUp} value={myVotes ?? '…'} label="Leadott szavazatod" />
+        {myPredictions && myPredictions.total > 0 && (
+          <StatCard icon={Target} value={`${myPredictions.correct}/${myPredictions.total}`} label="Igazam lett 🎯" />
+        )}
       </div>
 
       {/* Saját témák */}
