@@ -5,6 +5,8 @@ import { ChevronRight, Bookmark, Bell, Share2, Check, MoreHorizontal, Eye, Layer
 import { isSaved, toggleSaved } from '@/lib/savedPosts';
 import { isFollowingPost, toggleFollowPost } from '@/lib/postFollows';
 import { fetchContributionCounts } from '@/lib/credibility';
+import { fetchGroupMemberCounts } from '@/lib/groupStats';
+import { CATEGORIES } from '@/lib/categories';
 import { supabase } from '@/lib/supabase';
 import { SITE_URL } from '@/lib/publicConfig';
 import { deleteOwnPost } from '@/lib/postsDb';
@@ -27,10 +29,12 @@ export function PostCard({ post }: { post: FeedPost }) {
   const [followMsg, setFollowMsg] = useState<string | null>(null);
   const [uid, setUid] = useState<string | null>(null);
   const [authorContribs, setAuthorContribs] = useState<number | null>(null);
+  const [groupMembers, setGroupMembers] = useState<number | null>(null);
   useEffect(() => {
     let active = true;
     void isSaved(post.id).then((s) => { if (active) setSaved(s); });
     void isFollowingPost(post.id).then((f) => { if (active) setFollowing(f); });
+    void fetchGroupMemberCounts().then((m) => { if (active) setGroupMembers(m.get(post.category[0]) ?? 0); });
     supabase.auth.getSession().then(({ data }) => { if (active) setUid(data.session?.user?.id ?? null); });
     if (post.authorId) {
       void fetchContributionCounts([post.authorId]).then((m) => {
@@ -85,22 +89,13 @@ export function PostCard({ post }: { post: FeedPost }) {
 
   return (
     <article className="rounded-2xl border border-line bg-card p-5 sm:p-6">
-      {/* Kategória breadcrumb — az első elem a csoport oldalára visz */}
-      <div className="flex items-center gap-1.5 text-sm text-muted">
-        <Layers size={15} className="text-accent-soft" />
-        {post.category.map((c, i) => (
+      {/* Csoport-címke — kattintva a csoport oldalára visz (létrehozó, indulás, tagok) */}
+      <div className="flex flex-wrap items-center gap-1.5 text-sm text-muted">
+        <GroupChip name={post.category[0]} members={groupMembers} />
+        {post.category.slice(1).map((c, i) => (
           <span key={i} className="flex items-center gap-1.5">
-            {i > 0 && <ChevronRight size={14} className="text-line" />}
-            {i === 0 ? (
-              <Link
-                href={`/csoport/${encodeURIComponent(c)}`}
-                className="font-medium text-fg-soft transition-colors hover:text-accent-soft hover:underline"
-              >
-                {c}
-              </Link>
-            ) : (
-              <span className={i === post.category.length - 1 ? 'text-fg-soft' : ''}>{c}</span>
-            )}
+            <ChevronRight size={14} className="text-line" />
+            <span className="text-fg-soft">{c}</span>
           </span>
         ))}
       </div>
@@ -259,6 +254,26 @@ function OwnPostMenu({ postId }: { postId: number }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Facebook-stílusú csoport-címke a poszt tetején: ikon + név + taglétszám, a csoport oldalára visz. */
+function GroupChip({ name, members }: { name: string; members: number | null }) {
+  const Icon = CATEGORIES.find((c) => c.name === name)?.icon ?? Layers;
+  return (
+    <Link
+      href={`/csoport/${encodeURIComponent(name)}`}
+      className="inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent-strong/10 py-1 pl-1.5 pr-3 transition-colors hover:border-accent/50 hover:bg-accent-strong/20"
+      title={`${name} csoport megnyitása — létrehozó, indulás és tagok a csoport oldalán`}
+    >
+      <span className="grid h-6 w-6 place-items-center rounded-full bg-accent-strong/25 text-accent-soft">
+        <Icon size={13} />
+      </span>
+      <span className="font-semibold text-fg-soft">{name}</span>
+      <span className="text-xs text-muted">
+        csoport{members !== null ? ` · ${members} tag` : ''}
+      </span>
+    </Link>
   );
 }
 

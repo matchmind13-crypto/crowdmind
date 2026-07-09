@@ -80,7 +80,7 @@ export function CommunitySnapshot({
       {/* Arány-sáv: zöld (mellette) / szürke (semleges) / piros (ellene) */}
       <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-line">
         <div className="bg-positive transition-all" style={{ width: `${forPct}%` }} />
-        <div className="bg-neutral/70 transition-all" style={{ width: `${neutralPct}%` }} />
+        <div className="bg-zinc-500/80 transition-all" style={{ width: `${neutralPct}%` }} />
         <div className="bg-negative transition-all" style={{ width: `${againstPct}%` }} />
       </div>
 
@@ -99,7 +99,7 @@ export function CommunitySnapshot({
           disabled={busy}
           className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-hover disabled:opacity-60"
         >
-          <Minus size={13} className="text-neutral" />
+          <Minus size={13} className="text-zinc-400" />
           <span className="font-semibold text-fg">{neutralPct}%</span>
           <span className="text-muted">{locked ? 'Lezárult' : 'Semleges'}</span>
         </button>
