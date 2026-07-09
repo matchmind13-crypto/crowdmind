@@ -43,6 +43,11 @@ export function MediaGallery({ images }: { images: string[] }) {
   );
 }
 
+/** Videó-e az URL? (feltöltött .mp4/.webm/.mov vagy külső videó-link) */
+export function isVideoUrl(url: string) {
+  return /\.(mp4|webm|mov)(\?|#|$)/i.test(url);
+}
+
 function Tile({
   src,
   broken,
@@ -59,6 +64,18 @@ function Tile({
       <div className={`grid ${ratio} w-full place-items-center bg-gradient-to-br from-accent-strong/20 to-card-2 text-muted`}>
         <ImageIcon size={24} />
       </div>
+    );
+  }
+  if (isVideoUrl(src)) {
+    return (
+      // eslint-disable-next-line jsx-a11y/media-has-caption
+      <video
+        src={src}
+        controls
+        preload="metadata"
+        onError={onError}
+        className={`${ratio} w-full bg-black object-contain`}
+      />
     );
   }
   return (

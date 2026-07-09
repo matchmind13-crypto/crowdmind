@@ -3,7 +3,8 @@ import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Send, Loader2, LogIn, ImageIcon, Upload, X, Check } from 'lucide-react';
 import { createPost } from '@/lib/postsDb';
-import { uploadPostImage } from '@/lib/uploadImage';
+import { uploadPostMedia } from '@/lib/uploadImage';
+import { isVideoUrl } from '@/components/MediaGallery';
 import { CATEGORIES } from '@/lib/categories';
 import { useAuth } from '@/lib/useAuth';
 import type { PostType } from '@/data/types';
@@ -36,10 +37,13 @@ export default function CreatePostPage() {
     if (!file || uploading) return;
     setUploading(true);
     setUploadMsg(null);
-    const res = await uploadPostImage(file);
+    const res = await uploadPostMedia(file);
     if (res.ok) {
       setMediaUrl(res.url);
-      setUploadMsg({ text: 'Kép feltöltve — a téma alján fog megjelenni. ✓', ok: true });
+      setUploadMsg({
+        text: res.kind === 'video' ? 'Videó feltöltve — a téma alján fog megjelenni. ✓' : 'Kép feltöltve — a téma alján fog megjelenni. ✓',
+        ok: true,
+      });
     } else {
       setUploadMsg({ text: res.error, ok: false });
     }
@@ -144,8 +148,8 @@ export default function CreatePostPage() {
             />
           </Field>
 
-          <Field label="Kép (opcionális)">
-            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => void handleFile(e)} />
+          <Field label="Kép vagy videó (opcionális)">
+            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" className="hidden" onChange={(e) => void handleFile(e)} />
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <button
                 type="button"
@@ -154,7 +158,7 @@ export default function CreatePostPage() {
                 className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-line bg-card-2 px-4 py-3 text-sm font-medium text-fg-soft transition-colors hover:bg-hover disabled:opacity-60"
               >
                 {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} className="text-accent-soft" />}
-                {uploading ? 'Feltöltés…' : 'Kép feltöltése a gépedről'}
+                {uploading ? 'Feltöltés…' : 'Kép/videó feltöltése a gépedről'}
               </button>
               <div className="relative min-w-0 flex-1">
                 <ImageIcon size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
@@ -174,18 +178,28 @@ export default function CreatePostPage() {
             )}
             {mediaUrl.trim() !== '' && (
               <div className="relative mt-2.5 inline-block">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={mediaUrl}
-                  alt="Kép előnézet"
-                  className="max-h-44 rounded-xl border border-line object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
+                {isVideoUrl(mediaUrl) ? (
+                  // eslint-disable-next-line jsx-a11y/media-has-caption
+                  <video
+                    src={mediaUrl}
+                    controls
+                    preload="metadata"
+                    className="max-h-44 rounded-xl border border-line bg-black"
+                  />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mediaUrl}
+                    alt="Előnézet"
+                    className="max-h-44 rounded-xl border border-line object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                )}
                 <button
                   type="button"
                   onClick={() => { setMediaUrl(''); setUploadMsg(null); }}
                   className="absolute -right-2 -top-2 grid h-7 w-7 place-items-center rounded-full border border-line bg-card text-muted transition-colors hover:text-negative"
-                  aria-label="Kép eltávolítása"
+                  aria-label="Média eltávolítása"
                 >
                   <X size={14} />
                 </button>
