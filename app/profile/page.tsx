@@ -8,6 +8,7 @@ import { PanelCard, PanelHeader } from '@/components/PanelCard';
 import { StatCard } from '@/components/StatCard';
 import { PostCompactCard } from '@/components/PostCompactCard';
 import { AccountDataPanel } from '@/components/AccountDataPanel';
+import { PasswordChanger } from '@/components/PasswordChanger';
 import { useAuth } from '@/lib/useAuth';
 import { usePosts } from '@/lib/usePosts';
 import { supabase } from '@/lib/supabase';
@@ -100,6 +101,9 @@ export default function ProfilePage() {
 
       {/* Felhasználónév-szerkesztő */}
       {user && <UsernameEditor currentUsername={user.username} userId={user.id} />}
+
+      {/* Jelszó módosítása */}
+      {user && <PasswordChanger />}
 
       {/* Statisztikák (valódi adat) */}
       <div className="grid grid-cols-3 gap-3">
