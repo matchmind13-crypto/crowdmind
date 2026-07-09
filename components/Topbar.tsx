@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Plus, Bell, MessageSquare, ChevronDown, User as UserIcon, LogOut, UserCircle, LogIn } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
+import { useMyAvatar } from '@/lib/useMyAvatar';
 import { useUnreadCount } from '@/lib/useUnread';
 import { SearchOverlay } from './SearchOverlay';
 
@@ -98,6 +99,7 @@ export function Topbar() {
 function ProfileMenu({ username, onSignOut }: { username: string; onSignOut: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const avatarUrl = useMyAvatar();
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -113,9 +115,14 @@ function ProfileMenu({ username, onSignOut }: { username: string; onSignOut: () 
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-2 rounded-xl border border-line bg-card-2 py-1.5 pl-1.5 pr-2.5 transition-colors hover:bg-hover"
       >
-        <span className="grid h-7 w-7 place-items-center rounded-full bg-hover text-muted ring-1 ring-line">
-          <UserIcon size={15} />
-        </span>
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover ring-1 ring-line" />
+        ) : (
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-hover text-muted ring-1 ring-line">
+            <UserIcon size={15} />
+          </span>
+        )}
         <span className="hidden max-w-32 truncate text-sm font-medium text-fg-soft sm:inline">{username}</span>
         <ChevronDown size={15} className={`text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>

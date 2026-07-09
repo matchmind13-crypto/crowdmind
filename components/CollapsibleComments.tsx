@@ -6,12 +6,14 @@ import { MessagesSquare, ChevronDown, ImageIcon, Video, Smile, User as UserIcon,
 import { SortDropdown } from './SortDropdown';
 import { CommentList } from './CommentList';
 import { fetchComments, addComment } from '@/lib/postsDb';
+import { useMyAvatar } from '@/lib/useMyAvatar';
 import type { FeedComment } from '@/data/types';
 
 const SORT_OPTIONS = ['Legújabb', 'Legrégebbi'];
 
 export function CollapsibleComments({ postId, count }: { postId: number; count: number }) {
   const [open, setOpen] = useState(false);
+  const myAvatar = useMyAvatar();
   const [sort, setSort] = useState(SORT_OPTIONS[0]);
   const [comments, setComments] = useState<FeedComment[] | null>(null);
   const [loadError, setLoadError] = useState('');
@@ -91,9 +93,14 @@ export function CollapsibleComments({ postId, count }: { postId: number; count: 
 
               {/* Komment input */}
               <div className="mt-4 flex items-center gap-3 rounded-xl border border-line bg-bg-elevated px-3 py-2.5">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-hover text-muted ring-1 ring-line">
-                  <UserIcon size={16} />
-                </span>
+                {myAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={myAvatar} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-line" />
+                ) : (
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-hover text-muted ring-1 ring-line">
+                    <UserIcon size={16} />
+                  </span>
+                )}
                 <input
                   value={text}
                   onChange={(e) => setText(e.target.value)}

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { User as UserIcon, Camera, Loader2, X } from 'lucide-react';
 import { uploadAvatar, removeAvatar } from '@/lib/uploadImage';
+import { resetMyAvatarCache } from '@/lib/useMyAvatar';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -36,6 +37,7 @@ export function AvatarUploader({ userId }: { userId: string }) {
     const res = await uploadAvatar(file);
     if (res.ok) {
       setUrl(res.url);
+      resetMyAvatarCache();
       setMsg({ text: 'Profilkép beállítva. ✓', ok: true });
     } else {
       setMsg({ text: res.error, ok: false });
@@ -50,6 +52,7 @@ export function AvatarUploader({ userId }: { userId: string }) {
     const res = await removeAvatar();
     if (res.ok) {
       setUrl(null);
+      resetMyAvatarCache();
       setMsg({ text: 'Profilkép eltávolítva — vissza az anonim ikonra.', ok: true });
     } else {
       setMsg({ text: res.error ?? 'Hiba történt.', ok: false });
