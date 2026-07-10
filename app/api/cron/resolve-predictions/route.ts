@@ -12,7 +12,7 @@ import { SUPABASE_URL } from '@/lib/publicConfig';
 //  szekciójában várnak kézi döntésre.
 // ============================================================
 
-export const maxDuration = 60; // webes keresés + elemzés: időt hagyunk neki
+export const maxDuration = 300; // webes keresés + elemzés: bőven időt hagyunk neki
 
 const MAX_CHECKS_PER_RUN = 3;  // költség-plafon: futásonként legfeljebb ennyi jóslat
 const MAX_CONTINUATIONS = 3;   // pause_turn folytatások plafonja
@@ -73,27 +73,28 @@ export async function GET(request: Request) {
   const candidates = [...overdue, ...upcoming].slice(0, MAX_CHECKS_PER_RUN);
 
   const anthropic = new Anthropic();
-  const results: { id: number; title: string; dontes: string; indoklas?: string }[] = [];
 
-  for (const p of candidates) {
-    const isOverdue = new Date(p.resolve_at).getTime() <= now;
-    try {
-      const verdict = await judgePrediction(anthropic, p, isOverdue);
-      if (verdict.eredmeny === 'bejott' || verdict.eredmeny === 'nem_jott_be') {
-        const outcome = verdict.eredmeny === 'bejott' ? 'yes' : 'no';
-        const { error } = await service.from('posts').update({ outcome }).eq('id', p.id);
-        if (!error) {
-          await notifyVoters(service, p.id, p.title, outcome);
-          results.push({ id: p.id, title: p.title, dontes: outcome, indoklas: verdict.indoklas });
-          continue;
+  // A jelölteket PÁRHUZAMOSAN vizsgáljuk, hogy beférjünk az időkeretbe.
+  const results = await Promise.all(
+    candidates.map(async (p) => {
+      const isOverdue = new Date(p.resolve_at).getTime() <= now;
+      try {
+        const verdict = await judgePrediction(anthropic, p, isOverdue);
+        if (verdict.eredmeny === 'bejott' || verdict.eredmeny === 'nem_jott_be') {
+          const outcome = verdict.eredmeny === 'bejott' ? 'yes' : 'no';
+          const { error } = await service.from('posts').update({ outcome }).eq('id', p.id);
+          if (!error) {
+            await notifyVoters(service, p.id, p.title, outcome);
+            return { id: p.id, title: p.title, dontes: outcome, indoklas: verdict.indoklas };
+          }
         }
+        return { id: p.id, title: p.title, dontes: 'bizonytalan', indoklas: verdict.indoklas };
+      } catch (e) {
+        console.error('Jóslat-ellenőrzési hiba:', p.id, e);
+        return { id: p.id, title: p.title, dontes: 'hiba' };
       }
-      results.push({ id: p.id, title: p.title, dontes: 'bizonytalan', indoklas: verdict.indoklas });
-    } catch (e) {
-      console.error('Jóslat-ellenőrzési hiba:', p.id, e);
-      results.push({ id: p.id, title: p.title, dontes: 'hiba' });
-    }
-  }
+    }),
+  );
 
   return NextResponse.json({ ok: true, checked: candidates.length, results });
 }
