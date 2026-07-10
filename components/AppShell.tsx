@@ -34,8 +34,12 @@ export function AppShell({
             </main>
 
             {right && (
-              <aside className="hidden w-[360px] shrink-0 space-y-5 xl:block">
-                {right}
+              <aside className="hidden w-[360px] shrink-0 xl:block">
+                {/* Ragadós panel: görgetésnél a helyén marad, csak a fő hasáb mozog.
+                    Ha magasabb a képernyőnél, belül görgethető. */}
+                <div className="sticky top-[76px] max-h-[calc(100vh-92px)] space-y-5 overflow-y-auto pb-2 pr-1 [scrollbar-width:thin]">
+                  {right}
+                </div>
               </aside>
             )}
           </div>
