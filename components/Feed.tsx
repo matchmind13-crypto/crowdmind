@@ -6,6 +6,7 @@ import { PostCard } from './PostCard';
 import { DebateOfTheDay, pickDebateOfTheDay } from './DebateOfTheDay';
 import { usePreferences } from './PreferencesProvider';
 import { usePosts } from '@/lib/usePosts';
+import { CATEGORIES } from '@/lib/categories';
 import { cn } from '@/lib/utils';
 
 type Tab = 'neked' | 'felkapott' | 'friss';
@@ -68,6 +69,18 @@ export function Feed() {
     return [...mine.sort(byDate), ...rest.sort(byDate)];
   }, [posts, tab, preferred]);
 
+  // "Neked" fül: a választott témakörök posztjai külön, feliratozott blokkban.
+  const nekedGroups = useMemo(() => {
+    if (tab !== 'neked' || !preferred || preferred.length === 0 || !posts) return null;
+    const byDate = (a: (typeof posts)[number], b: (typeof posts)[number]) =>
+      b.createdAt.localeCompare(a.createdAt);
+    return {
+      topics: preferred,
+      mine: posts.filter((p) => preferred.includes(p.category[0])).sort(byDate),
+      rest: posts.filter((p) => !preferred.includes(p.category[0])).sort(byDate),
+    };
+  }, [tab, posts, preferred]);
+
   const debate = useMemo(() => pickDebateOfTheDay(posts ?? []), [posts]);
 
   const TABS: { id: Tab; label: string; icon: typeof Heart }[] = [
@@ -113,16 +126,6 @@ export function Feed() {
         ))}
       </div>
 
-      {tab === 'neked' && preferred && preferred.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 px-1 text-xs text-muted">
-          <Rss size={13} className="text-accent-soft" />
-          A követett témaköreid (
-          {preferred.slice(0, 4).join(', ')}
-          {preferred.length > 4 ? ` +${preferred.length - 4} további` : ''}
-          ) elöl — alattuk a többi friss téma.
-        </div>
-      )}
-
       {error && (
         <div className="flex items-center gap-3 rounded-xl border border-negative/30 bg-negative/10 px-4 py-3 text-sm text-fg-soft">
           <RefreshCw size={15} className="text-negative" />
@@ -147,9 +150,81 @@ export function Feed() {
             Hozd létre az első témát
           </Link>
         </div>
+      ) : nekedGroups ? (
+        <>
+          {/* A választott témaköreid posztjai — ez a személyre szabott rész */}
+          <SectionHeader icon={Heart} title="A témaköreidből" count={nekedGroups.mine.length} />
+          {nekedGroups.mine.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-line bg-card p-6 text-center">
+              <p className="text-sm text-fg-soft">
+                A választott témaköreidben még nincs téma — legyél te az első!
+              </p>
+              <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+                {nekedGroups.topics.slice(0, 6).map((name) => {
+                  const Icon = CATEGORIES.find((c) => c.name === name)?.icon ?? Rss;
+                  return (
+                    <span
+                      key={name}
+                      className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent-strong/10 px-2.5 py-1 text-xs text-fg-soft"
+                    >
+                      <Icon size={11} className="text-accent-soft" />
+                      {name}
+                    </span>
+                  );
+                })}
+                {nekedGroups.topics.length > 6 && (
+                  <span className="inline-flex items-center rounded-full border border-line px-2.5 py-1 text-xs text-muted">
+                    +{nekedGroups.topics.length - 6} további
+                  </span>
+                )}
+              </div>
+              <Link
+                href="/create"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-accent-strong px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent"
+              >
+                <Plus size={15} />
+                Indíts témát az egyikben
+              </Link>
+            </div>
+          ) : (
+            nekedGroups.mine.map((post) => <PostCard key={post.id} post={post} />)
+          )}
+
+          {/* A többi friss téma — hogy sose legyen üres a hírfolyam */}
+          {nekedGroups.rest.length > 0 && (
+            <>
+              <SectionHeader icon={Clock} title="További friss témák" count={nekedGroups.rest.length} />
+              {nekedGroups.rest.map((post) => <PostCard key={post.id} post={post} />)}
+            </>
+          )}
+        </>
       ) : (
         ordered.map((post) => <PostCard key={post.id} post={post} />)
       )}
+    </div>
+  );
+}
+
+/** Szakasz-fejléc a "Neked" fül blokkjaihoz (a Követett oldal stílusában). */
+function SectionHeader({
+  icon: Icon,
+  title,
+  count,
+}: {
+  icon: typeof Heart;
+  title: string;
+  count: number;
+}) {
+  return (
+    <div className="flex items-center gap-3 pt-1">
+      <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-strong/15 text-accent-soft">
+        <Icon size={16} />
+      </span>
+      <h2 className="text-base font-bold text-fg">{title}</h2>
+      <span className="rounded-full bg-accent-strong/15 px-2 py-0.5 text-xs font-semibold text-accent-soft">
+        {count} téma
+      </span>
+      <div className="h-px flex-1 bg-line" />
     </div>
   );
 }
