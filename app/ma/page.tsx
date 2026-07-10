@@ -1,12 +1,16 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Gauge, TrendingUp, TrendingDown, Minus, Flame, Activity, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Gauge, TrendingUp, TrendingDown, Minus, Flame, Activity, ArrowRight, Info } from 'lucide-react';
+import { AppShell } from '@/components/AppShell';
+import { PanelCard, PanelHeader } from '@/components/PanelCard';
+import { TrendPanel } from '@/components/TrendPanel';
+import { SentimentGauge } from '@/components/SentimentGauge';
 import { fetchDailyIndex } from '@/lib/dailyIndex';
 import { ShareDailyIndex, CopyIndexLink } from '@/components/ShareDailyIndex';
 
 /**
- * Napi közhangulat-index — a CrowdMind megosztható "címlapja":
- * crowdmind.dev/ma. Minden szám valódi szavazatokból, naponta frissül.
+ * Napi közhangulat-index — a CrowdMind megosztható "címlapja" (crowdmind.dev/ma),
+ * a teljes app-kerettel (bal menü, kereső-fejléc, jobb panelek).
  */
 export async function generateMetadata(): Promise<Metadata> {
   const idx = await fetchDailyIndex();
@@ -24,25 +28,35 @@ export default async function DailyIndexPage() {
   const idx = await fetchDailyIndex();
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col px-5 py-8">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-fg-soft"
-        >
-          <ArrowLeft size={15} />
-          CrowdMind
-        </Link>
-        <span className="text-sm text-muted">{idx.day}</span>
-      </div>
-
-      {/* A nagy szám */}
-      <section className="mt-10 text-center">
-        <p className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent-strong/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-accent-soft">
-          <Gauge size={14} />
-          Napi közhangulat-index
-        </p>
-        <p className="mt-6 text-7xl font-extrabold tracking-tight text-fg sm:text-8xl">
+    <AppShell
+      right={
+        <>
+          <PanelCard>
+            <PanelHeader title="Hogyan születik az index?" />
+            <p className="flex items-start gap-2 px-1 text-sm leading-relaxed text-muted">
+              <Info size={15} className="mt-0.5 shrink-0 text-accent-soft" />
+              <span>
+                Az index a CrowdMind összes témájára leadott valódi mellette/ellene szavazatból
+                számolódik, és minden új szavazattal mozdul. Nem reprezentatív közvélemény-kutatás —
+                a mi közösségünk pillanatnyi hangulata, naponta.
+              </span>
+            </p>
+          </PanelCard>
+          <TrendPanel />
+          <SentimentGauge />
+        </>
+      }
+    >
+      {/* A nagy szám — hero kártya */}
+      <section className="rounded-2xl border border-line bg-card px-6 py-10 text-center">
+        <div className="flex items-center justify-between">
+          <span className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent-strong/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-accent-soft">
+            <Gauge size={14} />
+            Napi közhangulat-index
+          </span>
+          <span className="text-sm text-muted">{idx.day}</span>
+        </div>
+        <p className="mt-8 text-7xl font-extrabold tracking-tight text-fg sm:text-8xl">
           {idx.pct}<span className="text-4xl text-accent-soft sm:text-5xl">%</span>
         </p>
         <p className="mt-2 text-lg font-semibold text-fg-soft">
@@ -71,10 +85,16 @@ export default async function DailyIndexPage() {
             </>
           )}
         </p>
+
+        {/* Megosztás */}
+        <div className="mt-7 flex flex-col items-center justify-center gap-2.5 sm:flex-row">
+          <ShareDailyIndex pct={idx.pct} day={idx.day} />
+          <CopyIndexLink />
+        </div>
       </section>
 
       {/* Mi mozgatja ma a közösséget */}
-      <section className="mt-10 space-y-3">
+      <section className="space-y-3">
         {idx.topDivisive && (
           <Link
             href={`/post/${idx.topDivisive.id}`}
@@ -113,13 +133,8 @@ export default async function DailyIndexPage() {
         )}
       </section>
 
-      {/* Megosztás + CTA */}
-      <section className="mt-8 flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center">
-        <ShareDailyIndex pct={idx.pct} day={idx.day} />
-        <CopyIndexLink />
-      </section>
-
-      <section className="mt-8 rounded-2xl border border-accent/25 bg-accent-strong/10 p-5 text-center">
+      {/* CTA */}
+      <section className="rounded-2xl border border-accent/25 bg-accent-strong/10 p-5 text-center">
         <p className="text-sm font-semibold text-fg">A te véleményed is számít bele.</p>
         <p className="mt-1 text-sm text-muted">
           Az index minden szavazattal mozog — mondd el, te hogy látod.
@@ -133,9 +148,9 @@ export default async function DailyIndexPage() {
         </Link>
       </section>
 
-      <p className="mt-auto pt-8 text-center text-xs text-muted">
+      <p className="text-center text-xs text-muted">
         CrowdMind · valódi közösségi szavazatokból, naponta frissülve · crowdmind.dev/ma
       </p>
-    </main>
+    </AppShell>
   );
 }
