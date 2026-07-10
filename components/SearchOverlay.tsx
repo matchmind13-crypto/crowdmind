@@ -14,12 +14,41 @@ import type { FeedPost } from '@/data/types';
  * - felhasználók: a profiles táblából (ilike),
  * - kategóriák: névre illeszkedő gyorslinkek.
  */
+const RECENT_KEY = 'crowdmind_recent_searches';
+
 export function SearchOverlay({ onClose }: { onClose: () => void }) {
   const [q, setQ] = useState('');
   const [posts, setPosts] = useState<FeedPost[] | null>(null);
   const [users, setUsers] = useState<string[]>([]);
   const [searchingUsers, setSearchingUsers] = useState(false);
+  const [recents, setRecents] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Keresési előzmények betöltése (csak a te böngésződben tárolódnak)
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(RECENT_KEY);
+      if (raw) setRecents(JSON.parse(raw));
+    } catch { /* privát mód */ }
+  }, []);
+
+  function saveRecent(t: string) {
+    const v = t.trim();
+    if (v.length < 2) return;
+    setRecents((prev) => {
+      const next = [v, ...prev.filter((x) => x.toLowerCase() !== v.toLowerCase())].slice(0, 8);
+      try { window.localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch { /* privát mód */ }
+      return next;
+    });
+  }
+
+  function removeRecent(t: string) {
+    setRecents((prev) => {
+      const next = prev.filter((x) => x !== t);
+      try { window.localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch { /* privát mód */ }
+      return next;
+    });
+  }
 
   // Adatok betöltése egyszer, megnyitáskor
   useEffect(() => {
@@ -75,7 +104,7 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
   const nothing = term.length >= 2 && postHits.length === 0 && users.length === 0 && categoryHits.length === 0 && !searchingUsers;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-[10vh] backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-16 backdrop-blur-sm sm:pt-24" onClick={onClose}>
       <div
         className="w-full max-w-xl overflow-hidden rounded-2xl border border-line bg-card shadow-2xl shadow-black/60"
         onClick={(e) => e.stopPropagation()}
@@ -87,6 +116,7 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
             ref={inputRef}
             value={q}
             onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') saveRecent(q); }}
             placeholder="Keresés témákra, kérdésekre, véleményekre…"
             className="min-w-0 flex-1 bg-transparent text-sm text-fg placeholder:text-muted focus:outline-none"
           />
@@ -98,9 +128,32 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
         {/* Találatok */}
         <div className="max-h-[60vh] overflow-y-auto p-2">
           {term.length < 2 ? (
-            <p className="px-3 py-6 text-center text-sm text-muted">
-              Írj be legalább 2 karaktert a kereséshez…
-            </p>
+            recents.length > 0 ? (
+              <Section title="Előzmények">
+                {recents.map((r) => (
+                  <div key={r} className="group flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-hover">
+                    <Search size={14} className="shrink-0 text-muted" />
+                    <button
+                      onClick={() => setQ(r)}
+                      className="min-w-0 flex-1 truncate text-left text-sm text-fg-soft"
+                    >
+                      {r}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); removeRecent(r); }}
+                      className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-muted transition-colors hover:bg-negative/15 hover:text-negative"
+                      aria-label={`„${r}” törlése az előzményekből`}
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                ))}
+              </Section>
+            ) : (
+              <p className="px-3 py-6 text-center text-sm text-muted">
+                Írj be legalább 2 karaktert a kereséshez…
+              </p>
+            )
           ) : (
             <>
               {categoryHits.length > 0 && (
@@ -130,7 +183,7 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
                     <Link
                       key={p.id}
                       href={`/post/${p.id}`}
-                      onClick={onClose}
+                      onClick={() => { saveRecent(q); onClose(); }}
                       className="flex items-start gap-3 rounded-xl px-3 py-2.5 hover:bg-hover"
                     >
                       <Layers size={15} className="mt-0.5 shrink-0 text-accent-soft" />
