@@ -10,7 +10,7 @@ import { AppShell } from '@/components/AppShell';
 export const metadata: Metadata = {
   title: 'Mi a CrowdMind?',
   description:
-    'A CrowdMind a magyar közösség véleményplatformja: kérdezz, szavazz, vitázz — az AI pedig összegzi, mit gondol a közösség. Ismerd meg, mit tud és hogyan használd!',
+    'A CrowdMind a közösség véleményplatformja: kérdezz, szavazz, vitázz — az AI pedig összegzi, mit gondol a közösség. Ismerd meg, mit tud és hogyan használd!',
   alternates: { canonical: '/rolunk' },
 };
 
@@ -33,7 +33,7 @@ export default function AboutPage() {
         </h1>
         <p className="mt-3 text-lg font-medium text-fg-soft">A közösség véleménye, AI-val rendszerezve</p>
         <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
-          A CrowdMind a magyar közösség véleményplatformja. Felteszel egy kérdést — a közösség
+          A CrowdMind a közösség véleményplatformja. Felteszel egy kérdést — a közösség
           szavaz és érvel — a mesterséges intelligencia pedig összegzi, mit gondol a többség, és
           mi a másik oldal legerősebb érve. Nem hírportál, és nem reprezentatív közvélemény-kutatás:
           élő, valós idejű közösségi vélemény, átlátszóan.
