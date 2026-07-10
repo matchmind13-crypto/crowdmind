@@ -9,11 +9,15 @@ import { Share2, Link as LinkIcon, Check, ChevronDown } from 'lucide-react';
 export function ShareMenu({ url, text }: { url: string; text: string }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setNote(null);
+      }
     }
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
@@ -32,17 +36,27 @@ export function ShareMenu({ url, text }: { url: string; text: string }) {
   function openShare(target: 'messenger' | 'whatsapp' | 'x') {
     const eUrl = encodeURIComponent(url);
     const eText = encodeURIComponent(`${text}\n${url}`);
-    let href = '';
+
     if (target === 'messenger') {
       const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      href = mobile
-        ? `fb-messenger://share/?link=${eUrl}`
-        : `https://www.facebook.com/sharer/sharer.php?u=${eUrl}`;
-    } else if (target === 'whatsapp') {
-      href = `https://wa.me/?text=${eText}`;
-    } else {
-      href = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${eUrl}`;
+      if (mobile) {
+        // Mobilon a Messenger-app közvetlenül megkapja a linket.
+        window.open(`fb-messenger://share/?link=${eUrl}`, '_blank', 'noopener,noreferrer');
+        setOpen(false);
+        return;
+      }
+      // Gépen: a linket vágólapra tesszük, és a Messenger új-üzenet oldalát nyitjuk —
+      // ott csak a címzettet kell kiválasztani, és beilleszteni (⌘V / Ctrl+V).
+      window.open('https://www.messenger.com/new', '_blank', 'noopener,noreferrer');
+      void navigator.clipboard.writeText(`${text}\n${url}`).catch(() => undefined);
+      setNote('A link a vágólapodon van ✓ — a Messengerben válaszd ki a címzettet, és illeszd be (⌘V).');
+      return;
     }
+
+    const href =
+      target === 'whatsapp'
+        ? `https://wa.me/?text=${eText}`
+        : `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${eUrl}`;
     window.open(href, '_blank', 'noopener,noreferrer');
     setOpen(false);
   }
@@ -96,6 +110,12 @@ export function ShareMenu({ url, text }: { url: string; text: string }) {
             <XIcon />
             X (Twitter)
           </button>
+
+          {note && (
+            <p className="mx-1.5 mb-1 mt-1.5 rounded-lg bg-positive/10 px-2.5 py-2 text-xs leading-relaxed text-positive">
+              {note}
+            </p>
+          )}
         </div>
       )}
     </div>
