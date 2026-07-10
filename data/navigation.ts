@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   Home, Compass, TrendingUp, Clock, Users, Bookmark, Bell,
-  Brain, GitCompareArrows, Gauge, Map, CalendarDays, UsersRound,
+  Brain, GitCompareArrows, Gauge, Map, CalendarDays, UsersRound, Info,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -11,6 +11,7 @@ export interface NavItem {
 }
 
 export const mainNav: NavItem[] = [
+  { label: 'Mi a CrowdMind?', href: '/rolunk', icon: Info },
   { label: 'Kezdőlap', href: '/', icon: Home },
   { label: 'Felfedezés', href: '/discover', icon: Compass },
   { label: 'Csoportok', href: '/csoportok', icon: UsersRound },
