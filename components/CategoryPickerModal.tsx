@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Check, X, Rss } from 'lucide-react';
-import { CATEGORIES } from '@/lib/categories';
+import { CATEGORIES, MIN_INTERESTS } from '@/lib/categories';
 import { usePreferences } from './PreferencesProvider';
 
 /** Kategória-kiválasztó ablak checkbox-okkal az "Egyéni hírfolyam"-hoz. */
@@ -33,14 +33,14 @@ export function CategoryPickerModal({ onClose }: { onClose: () => void }) {
           </span>
           <div className="flex-1">
             <h2 className="text-lg font-bold text-fg">Egyéni hírfolyam</h2>
-            <p className="text-sm text-muted">Válaszd ki, mely témák érdekelnek.</p>
+            <p className="text-sm text-muted">Válassz legalább {MIN_INTERESTS} témakört — ezek kerülnek előre a „Neked" fülön.</p>
           </div>
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-muted transition-colors hover:bg-hover hover:text-fg">
             <X size={18} />
           </button>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-4 grid max-h-[46vh] grid-cols-2 gap-2 overflow-y-auto pr-1 [scrollbar-width:thin]">
           {CATEGORIES.map((cat) => {
             const active = selected.includes(cat.name);
             const Icon = cat.icon;
@@ -68,8 +68,12 @@ export function CategoryPickerModal({ onClose }: { onClose: () => void }) {
           })}
         </div>
 
-        <div className="mt-3 flex items-center justify-between text-xs text-muted">
-          <span>{selected.length === 0 ? 'Nincs kiválasztva – minden téma látszik' : `${selected.length} kategória kiválasztva`}</span>
+        <div className="mt-3 flex items-center justify-between text-xs">
+          <span className={selected.length >= MIN_INTERESTS ? 'font-medium text-positive' : 'text-muted'}>
+            {selected.length >= MIN_INTERESTS
+              ? `${selected.length} témakör kiválasztva ✓`
+              : `Még ${MIN_INTERESTS - selected.length} témakör hiányzik (minimum ${MIN_INTERESTS})`}
+          </span>
           {selected.length > 0 && (
             <button onClick={() => setSelected([])} className="text-accent-soft hover:text-accent">
               Törlés
@@ -81,10 +85,10 @@ export function CategoryPickerModal({ onClose }: { onClose: () => void }) {
 
         <button
           onClick={handleSave}
-          disabled={saving}
-          className="mt-4 w-full rounded-xl bg-accent-strong py-3 text-sm font-semibold text-white transition-colors hover:bg-accent disabled:opacity-50"
+          disabled={saving || selected.length < MIN_INTERESTS}
+          className="mt-4 w-full rounded-xl bg-accent-strong py-3 text-sm font-semibold text-white transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {saving ? 'Mentés…' : 'Mentés'}
+          {saving ? 'Mentés…' : selected.length < MIN_INTERESTS ? `Válassz még ${MIN_INTERESTS - selected.length} témakört` : 'Mentés'}
         </button>
       </div>
     </div>

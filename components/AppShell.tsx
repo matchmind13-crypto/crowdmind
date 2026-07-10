@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MobileNav } from './MobileNav';
 import { PreferencesProvider } from './PreferencesProvider';
+import { InterestsOnboarding } from './InterestsOnboarding';
 
 /**
  * Közös oldalváz minden aloldalhoz: fix bal sidebar + felső sáv + tartalom.
@@ -47,6 +48,9 @@ export function AppShell({
 
         {/* Mobil: alsó navigáció + benyíló menü */}
         <MobileNav />
+
+        {/* Bejelentkezés utáni kötelező érdeklődés-választó (min. 5 témakör) */}
+        <InterestsOnboarding />
       </div>
     </PreferencesProvider>
   );

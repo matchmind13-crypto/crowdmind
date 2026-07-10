@@ -116,7 +116,10 @@ export function Feed() {
       {tab === 'neked' && preferred && preferred.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 px-1 text-xs text-muted">
           <Rss size={13} className="text-accent-soft" />
-          A követett kategóriáid ({preferred.join(', ')}) témái elöl — alattuk a többi friss téma.
+          A követett témaköreid (
+          {preferred.slice(0, 4).join(', ')}
+          {preferred.length > 4 ? ` +${preferred.length - 4} további` : ''}
+          ) elöl — alattuk a többi friss téma.
         </div>
       )}
 
