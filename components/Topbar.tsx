@@ -5,40 +5,17 @@ import { Search, Plus, Bell, MessageSquare, ChevronDown, User as UserIcon, LogOu
 import { useAuth } from '@/lib/useAuth';
 import { useMyAvatar } from '@/lib/useMyAvatar';
 import { useUnreadCount } from '@/lib/useUnread';
-import { SearchOverlay } from './SearchOverlay';
+import { SearchOverlay, SearchResults, useSearch } from './SearchOverlay';
 
 export function Topbar() {
   const { user, loading, signOut } = useAuth();
   const unread = useUnreadCount();
   const [searchOpen, setSearchOpen] = useState(false);
 
-  // ⌘K / Ctrl+K megnyitja a keresőt
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setSearchOpen(true);
-      }
-    }
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, []);
-
   return (
     <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-line bg-bg/80 px-5 py-3 backdrop-blur-xl">
-      {/* Kereső – kattintásra nyílik az overlay */}
-      <button
-        onClick={() => setSearchOpen(true)}
-        className="relative hidden max-w-xl flex-1 md:block"
-      >
-        <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-        <span className="block w-full rounded-xl border border-line bg-card-2 py-2.5 pl-10 pr-16 text-left text-sm text-muted transition-colors hover:border-accent/40">
-          Keresés témákra, kérdésekre, véleményekre…
-        </span>
-        <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded-md border border-line bg-bg-elevated px-1.5 py-0.5 text-[11px] font-medium text-muted lg:flex">
-          ⌘ K
-        </kbd>
-      </button>
+      {/* Kereső – a sáv a helyén marad, a találatok alatta nyílnak le */}
+      <DesktopSearch />
 
       {/* Mobil kereső-ikon */}
       <button
@@ -148,6 +125,73 @@ function ProfileMenu({ username, onSignOut }: { username: string; onSignOut: () 
             <LogOut size={16} />
             Kijelentkezés
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Asztali kereső: a fejléc-sáv a helyén marad, a találatok alatta nyílnak le. */
+function DesktopSearch() {
+  const s = useSearch();
+  const [open, setOpen] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // ⌘K / Ctrl+K a mezőre fókuszál
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        s.activate();
+        setOpen(true);
+        inputRef.current?.focus();
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Kívülre kattintás zárja a lenyílót
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+
+  function navigate() {
+    s.saveRecent(s.q);
+    setOpen(false);
+    inputRef.current?.blur();
+  }
+
+  const showPanel = open && (s.term.length > 0 || s.recents.length > 0);
+
+  return (
+    <div ref={boxRef} className="relative hidden max-w-xl flex-1 md:block">
+      <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-muted" />
+      <input
+        ref={inputRef}
+        value={s.q}
+        onChange={(e) => { s.setQ(e.target.value); s.activate(); setOpen(true); }}
+        onFocus={() => { s.activate(); setOpen(true); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') s.saveRecent(s.q);
+          if (e.key === 'Escape') { setOpen(false); (e.target as HTMLInputElement).blur(); }
+        }}
+        placeholder="Keresés témákra, kérdésekre, véleményekre…"
+        className="w-full rounded-xl border border-line bg-card-2 py-2.5 pl-10 pr-16 text-sm text-fg placeholder:text-muted transition-colors hover:border-accent/40 focus:border-accent/40 focus:outline-none focus:ring-2 focus:ring-accent/20"
+      />
+      <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded-md border border-line bg-bg-elevated px-1.5 py-0.5 text-[11px] font-medium text-muted lg:flex">
+        ⌘ K
+      </kbd>
+
+      {showPanel && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[65vh] overflow-y-auto rounded-2xl border border-line bg-card p-2 shadow-2xl shadow-black/50">
+          <SearchResults s={s} onNavigate={navigate} />
         </div>
       )}
     </div>
