@@ -44,6 +44,13 @@ export function DebateOfTheDay({ post }: { post: FeedPost }) {
 
       <h2 className="mt-3 text-lg font-bold leading-snug text-fg">{post.title}</h2>
 
+      {/* A kérdés szövege — ettől lesz a kártya figyelemfelkeltő, nem csak egy cím */}
+      {post.body.length > 0 && (
+        <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted">
+          {post.body.join(' ')}
+        </p>
+      )}
+
       <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-line">
         <div className="bg-positive" style={{ width: `${pct}%` }} />
         <div className="bg-negative" style={{ width: `${100 - pct}%` }} />
@@ -61,7 +68,7 @@ export function DebateOfTheDay({ post }: { post: FeedPost }) {
           {formatCount(post.commentsCount)} hozzászólás · {formatCount(total)} szavazat
         </span>
         <span className="ml-auto inline-flex items-center gap-1 font-semibold text-accent-soft">
-          Szólj hozzá <ArrowRight size={14} />
+          Te melyik oldalon állsz? <ArrowRight size={14} />
         </span>
       </div>
     </Link>
