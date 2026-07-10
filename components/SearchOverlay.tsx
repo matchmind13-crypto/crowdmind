@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Search, X, User as UserIcon, Layers, MessagesSquare, ThumbsUp, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -103,7 +104,10 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
 
   const nothing = term.length >= 2 && postHits.length === 0 && users.length === 0 && categoryHits.length === 0 && !searchingUsers;
 
-  return (
+  // Portál a body-ba: a fejléc backdrop-blur-je „befogná” a fixed elemet,
+  // ezért az overlayt a dokumentum gyökerére tesszük — így mindig a teljes
+  // képernyőt fedi, és a panel középen marad.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-16 backdrop-blur-sm sm:pt-24" onClick={onClose}>
       <div
         className="w-full max-w-xl overflow-hidden rounded-2xl border border-line bg-card shadow-2xl shadow-black/60"
@@ -228,7 +232,8 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
