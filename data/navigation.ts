@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   Home, Compass, TrendingUp, Clock, Users, Bookmark, Bell,
-  Brain, GitCompareArrows, Gauge, Map, CalendarDays, UsersRound, Info,
+  Brain, GitCompareArrows, Gauge, Medal, CalendarDays, UsersRound, Info,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -27,5 +27,5 @@ export const toolNav: NavItem[] = [
   { label: 'Összehasonlító', href: '/compare', icon: GitCompareArrows },
   { label: 'Hangulatindex', href: '/sentiment', icon: Gauge },
   { label: 'Napi index', href: '/ma', icon: CalendarDays },
-  { label: 'Közösségi térkép', href: '/map', icon: Map },
+  { label: 'Toplista', href: '/toplista', icon: Medal },
 ];

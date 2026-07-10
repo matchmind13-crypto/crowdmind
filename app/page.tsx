@@ -1,7 +1,7 @@
 import { AppShell } from '@/components/AppShell';
 import { Feed } from '@/components/Feed';
 import { TrendPanel } from '@/components/TrendPanel';
-import { CommunityMap } from '@/components/CommunityMap';
+import { LeaderboardPanel } from '@/components/LeaderboardPanel';
 import { SentimentGauge } from '@/components/SentimentGauge';
 import { FavoriteTopics } from '@/components/FavoriteTopics';
 
@@ -11,7 +11,7 @@ export default function HomePage() {
       right={
         <>
           <TrendPanel />
-          <CommunityMap />
+          <LeaderboardPanel />
           <SentimentGauge />
           <FavoriteTopics />
         </>

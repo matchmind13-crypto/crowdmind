@@ -80,7 +80,7 @@ export default function FreshPage() {
             </div>
           </PanelCard>
 
-          {/* Globális hangulat – dekoráció (mock adat, lásd data/trends.ts) */}
+          {/* Globális hangulat – valódi szavazatokból számolt mérő */}
           <SentimentGauge />
         </>
       }

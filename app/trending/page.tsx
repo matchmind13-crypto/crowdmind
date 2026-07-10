@@ -1,7 +1,7 @@
 'use client';
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { TrendingUp, MessagesSquare, ThumbsUp, Layers, Flame, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { TrendingUp, MessagesSquare, ThumbsUp, Layers, Flame, ChevronRight } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { StatCard } from '@/components/StatCard';
@@ -69,10 +69,6 @@ export default function TrendingPage() {
         ) : (
           <div className="divide-y divide-line">
             {ranked.map((p, i) => {
-              // MOCK: a trend-nyíl iránya egyelőre nem valódi historikus adatból jön
-              // (nincs időbeli összehasonlítás) – determinisztikus minta.
-              // KÉSŐBB CSERÉLENDŐ: pl. elmúlt 24h vs előző 24h aktivitás-különbségre.
-              const up = p.id % 3 !== 0;
               return (
                 <Link
                   key={p.id}
@@ -105,11 +101,7 @@ export default function TrendingPage() {
                     <p className="text-xs text-muted">hozzászólás</p>
                   </div>
 
-                  {up ? (
-                    <ArrowUpRight size={18} className="shrink-0 text-positive" />
-                  ) : (
-                    <ArrowDownRight size={18} className="shrink-0 text-negative" />
-                  )}
+                  <ChevronRight size={18} className="shrink-0 text-muted" />
                 </Link>
               );
             })}
