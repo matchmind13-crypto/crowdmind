@@ -14,7 +14,7 @@ from public.profiles p,
 (values
   ('A 48 csapatos vb jót tett a futballnak', 'Több meccs, több ország, több meglepetés — vagy csak felhígult a színvonal? Mondd el, hogy látod!', 'Futball', 'debate', 306, null::timestamptz),
   ('Az e-sport ugyanolyan sport, mint a hagyományosak', 'Reflex, taktika, csapatmunka, edzésterv — csak épp egér van a kézben. Sport ez, vagy sem?', 'Sport', 'debate', 299, null),
-  ('Európai válogatott nyeri a 2026-os világbajnokságot', 'A vb hajrájában vagyunk. Tartja Európa a hegemóniát, vagy jön a nagy fordulat? Július 20-án kiderül, kinek lett igaza.', 'Futball', 'prediction', 293, '2026-07-20 08:00:00+02'),
+  ('Európai válogatott nyeri a 2026-os világbajnokságot', 'A vb hajrájában vagyunk. Tartja Európa a hegemóniát, vagy jön a nagy fordulat? A szavazást a július 18-i döntő előtt lezárjuk — utána kiderül, kinek lett igaza.', 'Futball', 'prediction', 293, '2026-07-18 18:00:00+02'),
   ('Konditerem nélkül is lehet igazán fitt valaki', 'Saját testsúlyos edzés, futás, túrázás vs. bérlet és súlyzók. Kell a terem, vagy csak kifogás?', 'Fitnesz & edzés', 'question', 286, null),
   ('A mai Forma–1 túl kiszámítható lett', 'Aki az élről indul, az nyer? Vagy még mindig a legizgalmasabb sport a világon?', 'Motorsport & F1', 'question', 280, null),
   ('A magánegészségügy ma már alapszükséglet Magyarországon', 'Várólista vs. fizetős gyorsaság. Kimondjuk, ami a levegőben van?', 'Egészség', 'debate', 273, null),
