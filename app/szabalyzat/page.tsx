@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ScrollText, ArrowLeft } from 'lucide-react';
+import { AppShell } from '@/components/AppShell';
 
 export const metadata: Metadata = {
   title: 'Felhasználási szabályzat',
@@ -12,7 +13,8 @@ export const metadata: Metadata = {
 /** Felhasználási szabályzat — közérthető nyelven, a /privacy párja. */
 export default function TermsPage() {
   return (
-    <main className="mx-auto max-w-3xl px-5 py-10">
+    <AppShell wide>
+    <main className="mx-auto w-full max-w-3xl">
       <Link
         href="/"
         className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-fg-soft"
@@ -221,5 +223,6 @@ export default function TermsPage() {
         <Link href="/" className="text-accent-soft underline">crowdmind.dev</Link>
       </p>
     </main>
+    </AppShell>
   );
 }

@@ -8,6 +8,7 @@ import { fetchGroups, type GroupInfo } from '@/lib/groups';
 import { isVideoUrl } from '@/components/MediaGallery';
 import { CATEGORIES } from '@/lib/categories';
 import { useAuth } from '@/lib/useAuth';
+import { AppShell } from '@/components/AppShell';
 import type { PostType } from '@/data/types';
 
 const TYPE_OPTIONS: { value: PostType; label: string }[] = [
@@ -83,7 +84,8 @@ export default function CreatePostPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <AppShell wide>
+    <div className="mx-auto w-full max-w-2xl">
       <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-fg-soft">
         <ArrowLeft size={15} />
         Vissza a hírfolyamhoz
@@ -273,6 +275,7 @@ export default function CreatePostPage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }
 

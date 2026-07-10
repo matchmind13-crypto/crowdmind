@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ShieldCheck, ArrowLeft } from 'lucide-react';
+import { AppShell } from '@/components/AppShell';
 
 export const metadata: Metadata = {
   title: 'Adatkezelési tájékoztató',
@@ -9,10 +10,11 @@ export const metadata: Metadata = {
   alternates: { canonical: '/privacy' },
 };
 
-/** Adatkezelési tájékoztató — önálló, letisztult oldal (AppShell nélkül is olvasható). */
+/** Adatkezelési tájékoztató — a teljes app-keretben (bal menü + kereső-fejléc). */
 export default function PrivacyPage() {
   return (
-    <main className="mx-auto max-w-3xl px-5 py-10">
+    <AppShell wide>
+    <main className="mx-auto w-full max-w-3xl">
       <Link
         href="/"
         className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-fg-soft"
@@ -152,5 +154,6 @@ export default function PrivacyPage() {
         <Link href="/" className="text-accent-soft underline">crowdmind.dev</Link>
       </p>
     </main>
+    </AppShell>
   );
 }
