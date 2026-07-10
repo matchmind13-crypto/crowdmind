@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, Bookmark, Bell, Share2, Check, MoreHorizontal, Eye, Layers, Trash2, Loader2, UsersRound } from 'lucide-react';
+import { ChevronRight, Bookmark, Bell, MoreHorizontal, Eye, Layers, Trash2, Loader2, UsersRound } from 'lucide-react';
 import { isSaved, toggleSaved } from '@/lib/savedPosts';
 import { isFollowingPost, toggleFollowPost } from '@/lib/postFollows';
 import { fetchContributionCounts } from '@/lib/credibility';
@@ -15,6 +15,7 @@ import { ReportButton } from './ReportButton';
 import { PostTypeBadge } from './PostTypeBadge';
 import { MediaGallery } from './MediaGallery';
 import { PredictionStatus } from './PredictionStatus';
+import { ShareMenu } from './ShareMenu';
 import { CommunitySnapshot } from './CommunitySnapshot';
 import { CollapsibleComments } from './CollapsibleComments';
 import { CollapsibleAIAnalysis } from './CollapsibleAIAnalysis';
@@ -49,29 +50,9 @@ export function PostCard({ post }: { post: FeedPost }) {
 
   const isOwn = !!uid && post.authorId === uid;
 
-  const [shared, setShared] = useState(false);
-  async function handleShare() {
-    const url = `${SITE_URL}/post/${post.id}`;
-    const total = post.yesVotes + post.noVotes;
-    const pct = total > 0 ? Math.round((post.yesVotes / total) * 100) : 50;
-    const text = `„${post.title}” — a közösség ${pct}%-a mellette. Te melyik oldalon állsz?`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: post.title, text, url });
-        return;
-      }
-    } catch (e) {
-      // Csak a szándékos bezárásnál állunk le — más hibánál jön a vágólap.
-      if ((e as DOMException)?.name === 'AbortError') return;
-    }
-    try {
-      await navigator.clipboard.writeText(`${text}\n${url}`);
-      setShared(true);
-      setTimeout(() => setShared(false), 2500);
-    } catch {
-      // vágólap nélkül az URL kézzel másolható
-    }
-  }
+  const shareTotal = post.yesVotes + post.noVotes;
+  const sharePct = shareTotal > 0 ? Math.round((post.yesVotes / shareTotal) * 100) : 50;
+  const shareText = `„${post.title}” — a közösség ${sharePct}%-a mellette. Te melyik oldalon állsz?`;
 
   async function handleFollow() {
     const res = await toggleFollowPost(post.id);
@@ -139,12 +120,7 @@ export function PostCard({ post }: { post: FeedPost }) {
             active={saved}
             onClick={() => { void toggleSaved(post.id).then(setSaved); }}
           />
-          <ActionButton
-            icon={shared ? Check : Share2}
-            label={shared ? 'Link másolva!' : 'Megosztás'}
-            active={shared}
-            onClick={() => { void handleShare(); }}
-          />
+          <ShareMenu url={`${SITE_URL}/post/${post.id}`} text={shareText} />
           {isOwn ? (
             <OwnPostMenu postId={post.id} />
           ) : (
