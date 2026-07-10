@@ -115,9 +115,36 @@ export async function GET(request: Request) {
       // az oszlopok még nem léteznek — jóslat-szekció nélkül megyünk
     }
 
+    // Visszajelzések (a "Visszajelzés küldése" gombból) — tábla híján üres lista.
+    let feedbacks: { id: number; message: string; page: string | null; createdAt: string; from: string }[] = [];
+    try {
+      const { data: fb } = await admin
+        .from('feedback')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      const fbRows = (fb ?? []) as any[];
+      const fbUserIds = [...new Set(fbRows.map((f) => f.user_id).filter(Boolean))];
+      const { data: fbNames } =
+        fbUserIds.length > 0
+          ? await admin.from('profiles').select('user_id,username').in('user_id', fbUserIds)
+          : { data: [] as any[] };
+      const fbNameMap = new Map(((fbNames ?? []) as any[]).map((p) => [p.user_id, p.username]));
+      feedbacks = fbRows.map((f) => ({
+        id: f.id,
+        message: String(f.message ?? ''),
+        page: f.page ?? null,
+        createdAt: f.created_at,
+        from: (f.user_id && fbNameMap.get(f.user_id)) || f.email || 'névtelen látogató',
+      }));
+    } catch {
+      // a feedback tábla még nem létezik
+    }
+
     return NextResponse.json({
       reports: enriched,
       pendingPredictions,
+      feedbacks,
       stats: {
         users: profiles.count ?? 0,
         posts: posts.count ?? 0,

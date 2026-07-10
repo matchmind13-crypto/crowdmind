@@ -26,9 +26,18 @@ interface PendingPrediction {
   no: number;
 }
 
+interface AdminFeedback {
+  id: number;
+  message: string;
+  page: string | null;
+  createdAt: string;
+  from: string;
+}
+
 interface AdminData {
   reports: AdminReport[];
   pendingPredictions?: PendingPrediction[];
+  feedbacks?: AdminFeedback[];
   stats: { users: number; posts: number; comments: number; votes: number };
 }
 
@@ -74,6 +83,29 @@ export function AdminView() {
       }
     } catch {
       setMsg('A rögzítés nem sikerült.');
+    }
+    setBusy(null);
+  }
+
+  async function feedbackDone(id: number) {
+    if (busy) return;
+    setBusy(id);
+    setMsg(null);
+    try {
+      const res = await authedFetch('/api/admin/feedback-done', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setMsg(d.error ?? 'A művelet nem sikerült.');
+      } else {
+        setMsg('Visszajelzés lezárva. ✓');
+        await load();
+      }
+    } catch {
+      setMsg('A művelet nem sikerült.');
     }
     setBusy(null);
   }
@@ -283,6 +315,47 @@ export function AdminView() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Visszajelzések — a "Visszajelzés küldése" gomb üzenetei */}
+      {(data.feedbacks?.length ?? 0) > 0 && (
+        <>
+          <div className="mt-8 mb-3 flex items-center gap-3">
+            <h1 className="flex items-center gap-2 text-base font-bold text-fg">
+              <MessagesSquare size={16} className="text-accent-soft" />
+              Visszajelzések
+            </h1>
+            <span className="rounded-full bg-accent-strong/15 px-2 py-0.5 text-xs font-semibold text-accent-soft">
+              {data.feedbacks!.length}
+            </span>
+            <div className="h-px flex-1 bg-line" />
+          </div>
+
+          <div className="space-y-3">
+            {data.feedbacks!.map((f) => (
+              <div key={f.id} className="rounded-2xl border border-line bg-card p-4">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+                  <span className="rounded-full bg-accent-strong/15 px-2 py-0.5 font-semibold text-accent-soft">
+                    {f.from}
+                  </span>
+                  {f.page && <span className="rounded-full bg-card-2 px-2 py-0.5">{f.page}</span>}
+                  <span>· {new Date(f.createdAt).toLocaleString('hu-HU')}</span>
+                </div>
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-fg-soft">{f.message}</p>
+                <div className="mt-3">
+                  <button
+                    onClick={() => void feedbackDone(f.id)}
+                    disabled={busy === f.id}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-fg-soft transition-colors hover:bg-hover disabled:opacity-50"
+                  >
+                    {busy === f.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                    Elolvastam, lezárom
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </main>
   );

@@ -2,18 +2,20 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sparkles, Moon, Rss, Pencil, LogIn } from 'lucide-react';
+import { Sparkles, Moon, Rss, Pencil, LogIn, MessageSquarePlus } from 'lucide-react';
 import { mainNav, toolNav } from '@/data/navigation';
 import { cn } from '@/lib/utils';
 import { useUnreadCount } from '@/lib/useUnread';
 import { useTheme } from '@/lib/useTheme';
 import { usePreferences } from './PreferencesProvider';
 import { CategoryPickerModal } from './CategoryPickerModal';
+import { FeedbackModal } from './FeedbackModal';
 
 export function Sidebar() {
   const pathname = usePathname();
   const { dark, toggle: toggleTheme } = useTheme();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const { userId, preferred, loading } = usePreferences();
   const unread = useUnreadCount();
 
@@ -163,6 +165,15 @@ export function Sidebar() {
         </span>
       </button>
 
+      {/* Visszajelzés — hibák és ötletek egyenesen az üzemeltetőhöz */}
+      <button
+        onClick={() => setFeedbackOpen(true)}
+        className="flex items-center gap-2 px-2 py-1 text-sm text-fg-soft transition-colors hover:text-fg"
+      >
+        <MessageSquarePlus size={16} className="text-muted" />
+        <span>Visszajelzés küldése</span>
+      </button>
+
       {/* Jogi oldalak */}
       <div className="flex flex-wrap gap-x-3 px-2 pb-1 text-xs text-muted">
         <Link href="/szabalyzat" className="transition-colors hover:text-fg-soft">
@@ -174,6 +185,7 @@ export function Sidebar() {
       </div>
 
       {pickerOpen && <CategoryPickerModal onClose={() => setPickerOpen(false)} />}
+      {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
     </aside>
   );
 }
