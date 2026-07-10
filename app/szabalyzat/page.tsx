@@ -120,6 +120,11 @@ export default function TermsPage() {
               ha szabályszegést látsz, jelezd; minden jelentést átnézünk.
             </li>
             <li>
+              Az új tartalmakat egy <span className="font-semibold text-fg">automatikus AI-előszűrő</span> is
+              átnézi a házirend szempontjából. Az AI önmagában soha nem töröl semmit: a gyanús
+              tartalmat csak megjelöli, a döntést mindig ember hozza meg.
+            </li>
+            <li>
               A házirendet sértő tartalmat eltávolíthatjuk; súlyos vagy ismételt szabályszegésnél a
               fiókot felfüggeszthetjük vagy törölhetjük.
             </li>

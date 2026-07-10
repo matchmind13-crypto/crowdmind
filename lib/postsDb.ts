@@ -164,8 +164,29 @@ export async function createPost(input: NewPostInput): Promise<{ ok: boolean; er
   // (max 50 fő, best-effort — hiba esetén a poszt attól még létrejött).
   if (created?.id) {
     void notifyCategoryFollowers(created.id, input.category, base.title, session.user.id);
+    requestAiModeration('post', created.id);
   }
   return { ok: true };
+}
+
+/** Best-effort AI-előszűrés az új tartalomra (lásd /api/moderate) — a tartalom enélkül is él. */
+function requestAiModeration(kind: 'post' | 'comment', id: number) {
+  void (async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      await fetch('/api/moderate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ kind, id }),
+      });
+    } catch {
+      // csendben kimarad — a felhasználói Jelentés gomb a biztonsági háló
+    }
+  })();
 }
 
 /** Értesítés a kategória követőinek egy új témáról. */
@@ -283,13 +304,19 @@ export async function addComment(
     content: content.trim(),
   };
   if (parentId) payload.parent_id = parentId;
-  const { error } = await (supabase.from('comments') as any).insert(payload);
+  const { data: createdComment, error } = await (supabase.from('comments') as any)
+    .insert(payload)
+    .select('id')
+    .single();
   if (error) {
     // Ha a parent_id oszlop még nem létezik, a válasz funkció udvariasan jelez.
     if (parentId && /parent_id|column|schema cache/i.test(error.message)) {
       return { ok: false, error: 'A válasz funkció hamarosan elérhető.' };
     }
     return { ok: false, error: error.message };
+  }
+  if ((createdComment as { id?: number } | null)?.id) {
+    requestAiModeration('comment', (createdComment as { id: number }).id);
   }
   if (parentId) {
     void notifyReply(postId, parentId, session.user.id);

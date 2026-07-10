@@ -21,11 +21,12 @@ export async function GET(request: Request) {
 
     const rows = (reports ?? []) as {
       id: number;
-      reporter_id: string;
+      reporter_id: string | null;
       target_type: 'post' | 'comment';
       target_id: number;
       reason: string;
       created_at: string;
+      source?: 'user' | 'ai';
     }[];
 
     // A kifogásolt tartalmak és az érintett felhasználónevek betöltése
@@ -66,7 +67,11 @@ export async function GET(request: Request) {
         targetId: r.target_id,
         reason: r.reason,
         createdAt: r.created_at,
-        reporter: names.get(r.reporter_id) ?? 'ismeretlen',
+        source: r.source ?? 'user',
+        reporter:
+          r.source === 'ai'
+            ? 'AI-moderáció (automatikus előszűrés)'
+            : (r.reporter_id && names.get(r.reporter_id)) || 'ismeretlen',
         content: target
           ? r.target_type === 'post'
             ? { title: target.title, body: String(target.description ?? '').slice(0, 300), author: names.get(target.user_id) ?? 'ismeretlen', postId: target.id }

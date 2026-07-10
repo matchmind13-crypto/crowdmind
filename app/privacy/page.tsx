@@ -87,9 +87,10 @@ export default function PrivacyPage() {
               (oldalletöltések száma — személyes profil és nyomkövetés nélkül).
             </li>
             <li>
-              <span className="font-semibold text-fg">Anthropic (Claude AI)</span> — az AI-elemzés
-              funkcióhoz a témák és hozzászólások szövege (felhasználónév és email nélkül) kerül
-              feldolgozásra, kizárólag az összegzés elkészítéséhez.
+              <span className="font-semibold text-fg">Anthropic (Claude AI)</span> — az AI-elemzésekhez
+              és az automatikus moderációs előszűréshez a témák és hozzászólások szövege
+              (felhasználónév és email nélkül) kerül feldolgozásra, kizárólag az összegzés
+              elkészítéséhez, illetve a házirend-sértések jelzéséhez.
             </li>
           </ul>
         </section>

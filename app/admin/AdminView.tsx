@@ -13,6 +13,7 @@ interface AdminReport {
   targetId: number;
   reason: string;
   createdAt: string;
+  source?: 'user' | 'ai';
   reporter: string;
   content: { title: string | null; body: string; author: string; postId: number } | null;
 }
@@ -230,6 +231,11 @@ export function AdminView() {
           {data.reports.map((r) => (
             <div key={r.id} className="rounded-2xl border border-line bg-card p-4">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+                {r.source === 'ai' && (
+                  <span className="rounded-full bg-accent-strong/15 px-2 py-0.5 font-semibold text-accent-soft">
+                    🤖 AI-előszűrés
+                  </span>
+                )}
                 <span className="rounded-full bg-negative/15 px-2 py-0.5 font-semibold text-negative">{r.reason}</span>
                 <span className="rounded-full bg-card-2 px-2 py-0.5">{r.targetType === 'post' ? 'téma' : 'hozzászólás'}</span>
                 <span>jelentette: <span className="text-fg-soft">{r.reporter}</span></span>
