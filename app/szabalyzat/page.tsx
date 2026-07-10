@@ -166,6 +166,11 @@ export default function TermsPage() {
               Az AI-tartalom <span className="font-semibold text-fg">tájékoztató jellegű</span> — nem
               minősül jogi, pénzügyi, egészségügyi vagy más szakmai tanácsnak.
             </li>
+            <li>
+              A jóslatok eredményét a határidő után egy AI is ellenőrizheti nyilvános internetes
+              források alapján, és egyértelmű esetben automatikusan rögzíti — kétes esetben mindig
+              ember dönt.
+            </li>
           </ul>
         </section>
 
