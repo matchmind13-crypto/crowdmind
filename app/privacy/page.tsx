@@ -69,6 +69,12 @@ export default function PrivacyPage() {
             </li>
           </ul>
           <p className="mt-3">
+            Emellett <span className="font-semibold text-fg">névtelen használati számlálókat</span>{' '}
+            vezetünk arról, hogy a látogatók hány lépésig jutnak el (pl. hányan nyitják meg a
+            regisztrációt) — ezek csak a lépés nevét tartalmazzák, semmilyen azonosítót nem, így
+            senkihez nem köthetők.
+          </p>
+          <p className="mt-3">
             Nem gyűjtünk hirdetési profilt, nem használunk nyomkövető sütiket, és nem adjuk el az
             adataidat senkinek.
           </p>

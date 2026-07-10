@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { timeAgo } from './timeAgo';
 import { fetchCommentLikes } from './commentLikes';
 import { fetchGroups } from './groups';
+import { trackFunnel } from './funnel';
 import type { FeedPost, FeedComment, NotificationItem, PostType } from '@/data/types';
 
 const POST_TYPES: PostType[] = [
@@ -418,6 +419,7 @@ export async function castVote(postId: number, vote: 'yes' | 'no' | 'neutral', s
       ? `Új szavazat a témádra: „${title}” — állás: ${standing}`
       : `Új szavazat érkezett a témádra: „${title}”`,
   );
+  trackFunnel('szavazat');
   return { ok: true };
 }
 

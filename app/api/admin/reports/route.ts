@@ -141,10 +141,44 @@ export async function GET(request: Request) {
       // a feedback tábla még nem létezik
     }
 
+    // Regisztrációs tölcsér: lépésenkénti számlálók (7 nap + összes) — tábla híján üres.
+    const FUNNEL_STEPS = [
+      'latogatas',
+      'login_oldal',
+      'regisztracio_szandek',
+      'regisztracio_kesz',
+      'temakorok_kesz',
+      'szavazat',
+    ];
+    let funnel: { step: string; last7: number; total: number }[] = [];
+    try {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const counts = await Promise.all(
+        FUNNEL_STEPS.flatMap((step) => [
+          admin.from('events').select('id', { count: 'exact', head: true }).eq('name', step),
+          admin
+            .from('events')
+            .select('id', { count: 'exact', head: true })
+            .eq('name', step)
+            .gte('created_at', weekAgo),
+        ]),
+      );
+      if (!counts.some((c) => c.error)) {
+        funnel = FUNNEL_STEPS.map((step, i) => ({
+          step,
+          total: counts[i * 2].count ?? 0,
+          last7: counts[i * 2 + 1].count ?? 0,
+        }));
+      }
+    } catch {
+      // az events tábla még nem létezik
+    }
+
     return NextResponse.json({
       reports: enriched,
       pendingPredictions,
       feedbacks,
+      funnel,
       stats: {
         users: profiles.count ?? 0,
         posts: posts.count ?? 0,

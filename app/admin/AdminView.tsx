@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   ShieldCheck, Inbox, Flag, Trash2, Check, Loader2, Users, FileText,
-  MessagesSquare, ThumbsUp, ArrowLeft, ExternalLink, Target, CheckCircle2, XCircle,
+  MessagesSquare, ThumbsUp, ArrowLeft, ExternalLink, Target, CheckCircle2, XCircle, Filter,
 } from 'lucide-react';
 import { authedFetch } from '@/lib/authedFetch';
 
@@ -34,12 +34,29 @@ interface AdminFeedback {
   from: string;
 }
 
+interface FunnelRow {
+  step: string;
+  last7: number;
+  total: number;
+}
+
 interface AdminData {
   reports: AdminReport[];
   pendingPredictions?: PendingPrediction[];
   feedbacks?: AdminFeedback[];
+  funnel?: FunnelRow[];
   stats: { users: number; posts: number; comments: number; votes: number };
 }
+
+/** A tölcsér-lépések magyar címkéi (a sorrend = a tölcsér sorrendje). */
+const FUNNEL_LABELS: Record<string, string> = {
+  latogatas: 'Látogatás',
+  login_oldal: 'Belépés-oldal megnyitva',
+  regisztracio_szandek: 'Regisztráció elkezdve',
+  regisztracio_kesz: 'Regisztráció kész',
+  temakorok_kesz: 'Témakörök kiválasztva',
+  szavazat: 'Szavazott is',
+};
 
 /**
  * Admin diszpécserpult: jelentések a kifogásolt tartalommal, egykattintásos
@@ -183,6 +200,54 @@ export function AdminView() {
           </div>
         ))}
       </div>
+
+      {/* Regisztrációs tölcsér — névtelen, munkamenet-alapú lépés-számlálók */}
+      {(data.funnel?.length ?? 0) > 0 && (
+        <>
+          <div className="mt-8 mb-3 flex items-center gap-3">
+            <h2 className="flex items-center gap-2 text-base font-bold text-fg">
+              <Filter size={16} className="text-accent-soft" />
+              Regisztrációs tölcsér
+            </h2>
+            <span className="text-xs text-muted">az elmúlt 7 nap · zárójelben az összes</span>
+            <div className="h-px flex-1 bg-line" />
+          </div>
+
+          <div className="rounded-2xl border border-line bg-card p-4">
+            <div className="space-y-2.5">
+              {data.funnel!.map((row, i) => {
+                const first = data.funnel![0];
+                const widthPct = first.last7 > 0 ? Math.max((row.last7 / first.last7) * 100, 2) : 2;
+                const prev = i > 0 ? data.funnel![i - 1] : null;
+                const convPct =
+                  prev && prev.last7 > 0 ? Math.round((row.last7 / prev.last7) * 100) : null;
+                return (
+                  <div key={row.step} className="flex items-center gap-3">
+                    <span className="w-44 shrink-0 truncate text-sm text-fg-soft">
+                      {FUNNEL_LABELS[row.step] ?? row.step}
+                    </span>
+                    <div className="h-6 flex-1 overflow-hidden rounded-lg bg-bg-elevated">
+                      <div
+                        className="flex h-full items-center rounded-lg bg-gradient-to-r from-accent-strong to-accent px-2"
+                        style={{ width: `${widthPct}%` }}
+                      >
+                        <span className="text-xs font-bold text-white">{row.last7}</span>
+                      </div>
+                    </div>
+                    <span className="w-24 shrink-0 text-right text-xs text-muted">
+                      ({row.total} összes){convPct !== null ? ` · ${convPct}%` : ''}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-[11px] leading-relaxed text-muted">
+              Névtelen számlálás: minden böngésző-munkamenet lépésenként egyszer számít, azonosítót
+              nem tárolunk. A % az előző lépéshez viszonyított továbbjutás (7 nap).
+            </p>
+          </div>
+        </>
+      )}
 
       {/* Lezárásra váró jóslatok */}
       {(data.pendingPredictions ?? []).length > 0 && (

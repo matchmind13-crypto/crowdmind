@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { UserCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/useAuth';
+import { trackFunnel } from '@/lib/funnel';
 
 type Status = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
 
@@ -57,6 +58,7 @@ export function UsernameSetupModal() {
       return;
     }
     // Siker – frissítjük az oldalt, hogy a fejléc a nevet mutassa.
+    trackFunnel('regisztracio_kesz'); // keepalive: a frissítés közben is elmegy
     window.location.reload();
   }
 

@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 import { UsernameSetupModal } from '@/components/UsernameSetupModal';
 import { PrivacyConsent } from '@/components/PrivacyConsent';
+import { FunnelBeacon } from '@/components/FunnelBeacon';
 import { SITE_URL } from '@/lib/publicConfig';
 
 export const metadata: Metadata = {
@@ -51,6 +52,8 @@ export default function RootLayout({
         <PrivacyConsent />
         {/* Süti nélküli, anonim látogatottság-mérés (Vercel Web Analytics). */}
         <Analytics />
+        {/* Névtelen tölcsér-számláló (munkamenetenként egyszer). */}
+        <FunnelBeacon />
       </body>
     </html>
   );

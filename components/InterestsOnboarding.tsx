@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Check, Sparkles } from 'lucide-react';
 import { CATEGORIES, MIN_INTERESTS } from '@/lib/categories';
+import { trackFunnel } from '@/lib/funnel';
 import { useAuth } from '@/lib/useAuth';
 import { usePreferences } from './PreferencesProvider';
 
@@ -55,7 +56,11 @@ export function InterestsOnboarding() {
     setError('');
     const res = await save(selected);
     setSaving(false);
-    if (!res.ok) setError(res.error ?? 'Nem sikerült menteni — próbáld újra!');
+    if (!res.ok) {
+      setError(res.error ?? 'Nem sikerült menteni — próbáld újra!');
+      return;
+    }
+    trackFunnel('temakorok_kesz');
     // Sikernél a preferred frissül, és a kapu magától eltűnik.
   }
 

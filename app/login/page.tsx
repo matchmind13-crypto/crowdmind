@@ -6,6 +6,7 @@ import {
   ThumbsUp, BrainCircuit, Target, UsersRound, ShieldCheck,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { trackFunnel } from '@/lib/funnel';
 
 // A felhasználónév-mező lehetséges állapotai a valós idejű ellenőrzéshez.
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
@@ -19,6 +20,11 @@ export default function LoginPage() {
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
+
+  // Tölcsér: hányan jutnak el a bejelentkezés/regisztráció oldalig.
+  useEffect(() => {
+    trackFunnel('login_oldal');
+  }, []);
 
   // Jelszó-visszaállító email küldése (a linkje a /reset-password oldalra hoz vissza).
   async function handleForgotPassword() {
@@ -113,6 +119,7 @@ export default function LoginPage() {
       return;
     }
 
+    trackFunnel('regisztracio_kesz'); // keepalive: az átirányítás közben is elmegy
     window.location.href = '/';
   }
 
@@ -219,7 +226,7 @@ export default function LoginPage() {
                 Bejelentkezés
               </button>
               <button
-                onClick={() => { setIsLogin(false); setMessage(''); }}
+                onClick={() => { setIsLogin(false); setMessage(''); trackFunnel('regisztracio_szandek'); }}
                 className={`rounded-lg py-2.5 text-sm font-semibold transition-colors ${!isLogin ? 'bg-accent-strong text-white' : 'text-muted hover:text-fg-soft'}`}
               >
                 Regisztráció
