@@ -4,7 +4,11 @@ import { Check, X, Rss } from 'lucide-react';
 import { CATEGORIES, MIN_INTERESTS } from '@/lib/categories';
 import { usePreferences } from './PreferencesProvider';
 
-/** Kategória-kiválasztó ablak checkbox-okkal az "Egyéni hírfolyam"-hoz. */
+/**
+ * Az "Egyéni hírfolyam" szerkesztője: ugyanaz az 50 témakör, ugyanolyan
+ * Tinder-stílusú ikonos pill-ekkel, mint a bejelentkezés utáni választóban.
+ * Minimum MIN_INTERESTS témakört kell kiválasztva hagyni.
+ */
 export function CategoryPickerModal({ onClose }: { onClose: () => void }) {
   const { preferred, save } = usePreferences();
   const [selected, setSelected] = useState<string[]>(preferred ?? []);
@@ -16,6 +20,7 @@ export function CategoryPickerModal({ onClose }: { onClose: () => void }) {
   }
 
   async function handleSave() {
+    if (selected.length < MIN_INTERESTS) return;
     setSaving(true);
     setError('');
     const res = await save(selected);
@@ -24,23 +29,29 @@ export function CategoryPickerModal({ onClose }: { onClose: () => void }) {
     onClose();
   }
 
+  const missing = MIN_INTERESTS - selected.length;
+  const ready = selected.length >= MIN_INTERESTS;
+
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-line bg-card p-6 shadow-2xl shadow-black/60">
+      <div className="flex max-h-[88vh] w-full max-w-3xl flex-col rounded-2xl border border-line bg-card p-6 shadow-2xl shadow-black/60">
         <div className="mb-1 flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-strong/20 text-accent-soft ring-1 ring-accent/30">
             <Rss size={19} />
           </span>
           <div className="flex-1">
             <h2 className="text-lg font-bold text-fg">Egyéni hírfolyam</h2>
-            <p className="text-sm text-muted">Válassz legalább {MIN_INTERESTS} témakört — ezek kerülnek előre a „Neked" fülön.</p>
+            <p className="text-sm text-muted">
+              Mind az {CATEGORIES.length} témakörből választhatsz — legalább {MIN_INTERESTS} maradjon
+              kiválasztva. Ezek kerülnek előre a „Neked" fülön.
+            </p>
           </div>
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-muted transition-colors hover:bg-hover hover:text-fg">
             <X size={18} />
           </button>
         </div>
 
-        <div className="mt-4 grid max-h-[46vh] grid-cols-2 gap-2 overflow-y-auto pr-1 [scrollbar-width:thin]">
+        <div className="mt-4 flex flex-wrap gap-2 overflow-y-auto pr-1 [scrollbar-width:thin]">
           {CATEGORIES.map((cat) => {
             const active = selected.includes(cat.name);
             const Icon = cat.icon;
@@ -48,31 +59,25 @@ export function CategoryPickerModal({ onClose }: { onClose: () => void }) {
               <button
                 key={cat.name}
                 onClick={() => toggle(cat.name)}
-                className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-all ${
                   active
-                    ? 'border-accent/50 bg-accent-strong/15 text-fg'
-                    : 'border-line bg-bg-elevated text-fg-soft hover:bg-hover'
+                    ? 'border-accent bg-accent-strong text-white shadow-md shadow-accent-strong/25'
+                    : 'border-line bg-bg-elevated text-fg-soft hover:border-accent/40 hover:bg-hover'
                 }`}
               >
-                <span
-                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border ${
-                    active ? 'border-accent bg-accent-strong text-white' : 'border-line'
-                  }`}
-                >
-                  {active && <Check size={13} />}
-                </span>
-                <Icon size={16} className={active ? 'text-accent-soft' : 'text-muted'} />
-                <span className="truncate">{cat.name}</span>
+                <Icon size={14} className={active ? 'text-white' : 'text-accent-soft'} />
+                {cat.name}
+                {active && <Check size={13} />}
               </button>
             );
           })}
         </div>
 
-        <div className="mt-3 flex items-center justify-between text-xs">
-          <span className={selected.length >= MIN_INTERESTS ? 'font-medium text-positive' : 'text-muted'}>
-            {selected.length >= MIN_INTERESTS
+        <div className="mt-4 flex items-center justify-between text-xs">
+          <span className={ready ? 'font-medium text-positive' : 'text-muted'}>
+            {ready
               ? `${selected.length} témakör kiválasztva ✓`
-              : `Még ${MIN_INTERESTS - selected.length} témakör hiányzik (minimum ${MIN_INTERESTS})`}
+              : `Még ${missing} témakör hiányzik (minimum ${MIN_INTERESTS})`}
           </span>
           {selected.length > 0 && (
             <button onClick={() => setSelected([])} className="text-accent-soft hover:text-accent">
@@ -85,10 +90,10 @@ export function CategoryPickerModal({ onClose }: { onClose: () => void }) {
 
         <button
           onClick={handleSave}
-          disabled={saving || selected.length < MIN_INTERESTS}
-          className="mt-4 w-full rounded-xl bg-accent-strong py-3 text-sm font-semibold text-white transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={saving || !ready}
+          className="mt-3 w-full rounded-xl bg-accent-strong py-3 text-sm font-semibold text-white transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {saving ? 'Mentés…' : selected.length < MIN_INTERESTS ? `Válassz még ${MIN_INTERESTS - selected.length} témakört` : 'Mentés'}
+          {saving ? 'Mentés…' : !ready ? `Válassz még ${missing} témakört` : 'Mentés'}
         </button>
       </div>
     </div>
