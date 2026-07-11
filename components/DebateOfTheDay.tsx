@@ -28,6 +28,8 @@ export function pickDebateOfTheDay(posts: FeedPost[]): FeedPost | null {
 export function DebateOfTheDay({ post }: { post: FeedPost }) {
   const total = post.yesVotes + post.noVotes;
   const pct = total > 0 ? Math.round((post.yesVotes / total) * 100) : 50;
+  // Kevés szavazatnál nem rajzolunk "eredményt" — friss vitaként hívogatunk.
+  const isFresh = total < 5;
 
   return (
     <Link
@@ -52,20 +54,29 @@ export function DebateOfTheDay({ post }: { post: FeedPost }) {
       )}
 
       <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-line">
-        <div className="bg-positive" style={{ width: `${pct}%` }} />
-        <div className="bg-negative" style={{ width: `${100 - pct}%` }} />
+        {!isFresh && (
+          <>
+            <div className="bg-positive" style={{ width: `${pct}%` }} />
+            <div className="bg-negative" style={{ width: `${100 - pct}%` }} />
+          </>
+        )}
       </div>
 
       <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-        <span>
-          <span className="font-semibold text-positive">{pct}%</span>
-          <span className="text-muted"> mellette · </span>
-          <span className="font-semibold text-negative">{100 - pct}%</span>
-          <span className="text-muted"> ellene</span>
-        </span>
+        {isFresh ? (
+          <span className="text-muted">Friss vita — az állás most dől el.</span>
+        ) : (
+          <span>
+            <span className="font-semibold text-positive">{pct}%</span>
+            <span className="text-muted"> mellette · </span>
+            <span className="font-semibold text-negative">{100 - pct}%</span>
+            <span className="text-muted"> ellene</span>
+          </span>
+        )}
         <span className="inline-flex items-center gap-1 text-muted">
           <MessageSquare size={13} />
-          {formatCount(post.commentsCount)} hozzászólás · {formatCount(total)} szavazat
+          {formatCount(post.commentsCount)} hozzászólás
+          {!isFresh && <> · {formatCount(total)} szavazat</>}
         </span>
         <span className="ml-auto inline-flex items-center gap-1 font-semibold text-accent-soft">
           Te melyik oldalon állsz? <ArrowRight size={14} />
