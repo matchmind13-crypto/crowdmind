@@ -28,8 +28,9 @@ export function pickDebateOfTheDay(posts: FeedPost[]): FeedPost | null {
 export function DebateOfTheDay({ post }: { post: FeedPost }) {
   const total = post.yesVotes + post.noVotes;
   const pct = total > 0 ? Math.round((post.yesVotes / total) * 100) : 50;
-  // Kevés szavazatnál nem rajzolunk "eredményt" — friss vitaként hívogatunk.
-  const isFresh = total < 5;
+  // A sáv mindig a valós arányt mutatja — csak szó szerint 0 szavazatnál
+  // hívogatunk "friss vita" szöveggel helyette.
+  const isEmpty = total === 0;
 
   return (
     <Link
@@ -54,7 +55,7 @@ export function DebateOfTheDay({ post }: { post: FeedPost }) {
       )}
 
       <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-line">
-        {!isFresh && (
+        {!isEmpty && (
           <>
             <div className="bg-positive" style={{ width: `${pct}%` }} />
             <div className="bg-negative" style={{ width: `${100 - pct}%` }} />
@@ -63,7 +64,7 @@ export function DebateOfTheDay({ post }: { post: FeedPost }) {
       </div>
 
       <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-        {isFresh ? (
+        {isEmpty ? (
           <span className="text-muted">Friss vita — az állás most dől el.</span>
         ) : (
           <span>
@@ -76,7 +77,7 @@ export function DebateOfTheDay({ post }: { post: FeedPost }) {
         <span className="inline-flex items-center gap-1 text-muted">
           <MessageSquare size={13} />
           {formatCount(post.commentsCount)} hozzászólás
-          {!isFresh && <> · {formatCount(total)} szavazat</>}
+          {!isEmpty && <> · {formatCount(total)} szavazat</>}
         </span>
         <span className="ml-auto inline-flex items-center gap-1 font-semibold text-accent-soft">
           Te melyik oldalon állsz? <ArrowRight size={14} />

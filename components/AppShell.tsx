@@ -1,9 +1,25 @@
+'use client';
 import type { ReactNode } from 'react';
+import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MobileNav } from './MobileNav';
 import { PreferencesProvider } from './PreferencesProvider';
 import { InterestsOnboarding } from './InterestsOnboarding';
+
+/**
+ * Minden valódi oldalon (a /login kivételével, mert az nincs AppShell-ben)
+ * elmentjük az aktuális útvonalat — így a login oldal be tud fejeztével pontosan
+ * oda visszairányítani, ahonnan a felhasználó jött (pl. egy megosztott poszt).
+ */
+function useRememberReturnPath() {
+  const pathname = usePathname();
+  useEffect(() => {
+    if (!pathname) return;
+    window.sessionStorage.setItem('cm_return_to', pathname);
+  }, [pathname]);
+}
 
 /**
  * Közös oldalváz minden aloldalhoz: fix bal sidebar + felső sáv + tartalom.
@@ -19,6 +35,7 @@ export function AppShell({
   right?: ReactNode;
   wide?: boolean;
 }) {
+  useRememberReturnPath();
   return (
     <PreferencesProvider>
       <div className="min-h-screen">

@@ -37,9 +37,10 @@ export function CommunitySnapshot({
   const forPct = total > 0 ? Math.round((yes / total) * 100) : 0;
   const neutralPct = total > 0 ? Math.round((neutral / total) * 100) : 0;
   const againstPct = total > 0 ? Math.max(0, 100 - forPct - neutralPct) : 0;
-  // Kevés szavazatnál nem mutatunk százalékokat (1 szavazatból "100%" félrevezető
-  // és kínos is) — helyette hívogató "friss kérdés" állapot.
-  const isFresh = total < 5;
+  // A sávnak és az aránynak MINDIG látszania kell — a szavazatszám mellette
+  // teszi átláthatóvá, hogy ez 1 vagy 100 szavazatból jött ki. Csak a szó szerint
+  // üres (0 szavazat) állapotnál mutatunk hívogató szöveget bár helyette.
+  const isEmpty = total === 0;
 
   async function vote(v: 'yes' | 'no' | 'neutral') {
     if (busy) return;
@@ -76,15 +77,14 @@ export function CommunitySnapshot({
           Közösség egy pillantásban
         </span>
         <span className="text-xs text-muted">
-          {isFresh ? 'Friss kérdés' : `${formatCount(total)} szavazat`} ·{' '}
-          {formatCount(commentsCount)} hozzászólás
+          {formatCount(total)} szavazat · {formatCount(commentsCount)} hozzászólás
         </span>
       </div>
 
-      {/* Arány-sáv: zöld (mellette) / szürke (semleges) / piros (ellene).
-          Friss kérdésnél üres sáv — 1-2 szavazatból nem rajzolunk "eredményt". */}
+      {/* Arány-sáv: zöld (mellette) / szürke (semleges) / piros (ellene) — mindig a valós
+          arányt mutatja, akár egyetlen szavazatból is (a szám mellette jelzi a mintaméretet). */}
       <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-line">
-        {!isFresh && (
+        {!isEmpty && (
           <>
             <div className="bg-positive transition-all" style={{ width: `${forPct}%` }} />
             <div className="bg-zinc-500/80 transition-all" style={{ width: `${neutralPct}%` }} />
@@ -93,7 +93,7 @@ export function CommunitySnapshot({
         )}
       </div>
 
-      {isFresh && (
+      {isEmpty && (
         <p className="mt-2 text-center text-xs text-accent-soft">
           Legyél az elsők között, akik szavaznak — a te voksod indítja el a mérleget!
         </p>
@@ -106,7 +106,7 @@ export function CommunitySnapshot({
           className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-positive/10 disabled:opacity-60"
         >
           <ThumbsUp size={13} className="text-positive" />
-          {!isFresh && <span className="font-semibold text-fg">{forPct}%</span>}
+          {!isEmpty && <span className="font-semibold text-fg">{forPct}%</span>}
           <span className="text-muted">Mellette</span>
         </button>
         <button
@@ -115,7 +115,7 @@ export function CommunitySnapshot({
           className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-hover disabled:opacity-60"
         >
           <Minus size={13} className="text-zinc-400" />
-          {!isFresh && <span className="font-semibold text-fg">{neutralPct}%</span>}
+          {!isEmpty && <span className="font-semibold text-fg">{neutralPct}%</span>}
           <span className="text-muted">{locked ? 'Lezárult' : 'Semleges'}</span>
         </button>
         <button
@@ -124,7 +124,7 @@ export function CommunitySnapshot({
           className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors hover:bg-negative/10 disabled:opacity-60"
         >
           <ThumbsDown size={13} className="text-negative" />
-          {!isFresh && <span className="font-semibold text-fg">{againstPct}%</span>}
+          {!isEmpty && <span className="font-semibold text-fg">{againstPct}%</span>}
           <span className="text-muted">Ellene</span>
         </button>
       </div>

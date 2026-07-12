@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Check, Sparkles } from 'lucide-react';
 import { CATEGORIES, MIN_INTERESTS } from '@/lib/categories';
 import { trackFunnel } from '@/lib/funnel';
@@ -12,20 +13,27 @@ import { usePreferences } from './PreferencesProvider';
  * teljes képernyős választó jelenik meg. A választás a profiles.preferred_categories-be
  * kerül, így azonnal a "Neked" fület is személyre szabja — később a Sidebar
  * "Egyéni hírfolyam → Szerkesztés" gombjával módosítható.
+ *
+ * Kivétel: konkrét poszt/csoport oldalon NEM jelenik meg — ha valaki egy megosztott
+ * linkről regisztrál, először azt kell látnia, amiért idejött, nem egy témaválasztó falat.
  */
 export function InterestsOnboarding() {
   const { user, loading: authLoading } = useAuth();
   const { preferred, loading, columnMissing, save } = usePreferences();
+  const pathname = usePathname();
   const [selected, setSelected] = useState<string[]>([]);
   const [seeded, setSeeded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const onSharedContent = pathname?.startsWith('/post/') || pathname?.startsWith('/csoport/');
 
   const show =
     !authLoading &&
     !!user?.username && // névválasztás előtt a UsernameSetupModal a dolga
     !loading &&
     !columnMissing &&
+    !onSharedContent &&
     (preferred?.length ?? 0) < MIN_INTERESTS;
 
   // A korábbi (5-nél kevesebb) választást előre bepipáljuk.

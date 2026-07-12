@@ -11,6 +11,18 @@ import { trackFunnel } from '@/lib/funnel';
 // A felhasználónév-mező lehetséges állapotai a valós idejű ellenőrzéshez.
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
 
+// Hova térjünk vissza sikeres belépés/regisztráció után — az AppShell menti el
+// minden valódi oldalon (pl. egy megosztott poszton), hogy onnan ne vesszen el a látogató.
+function getReturnPath(): string {
+  try {
+    const path = window.sessionStorage.getItem('cm_return_to');
+    if (path && path.startsWith('/') && !path.startsWith('/login')) return path;
+  } catch {
+    // privát mód / sessionStorage tiltva — nem kritikus
+  }
+  return '/';
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -73,7 +85,7 @@ export default function LoginPage() {
     if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setMessage(error.message);
-      else { window.location.href = '/'; return; }
+      else { window.location.href = getReturnPath(); return; }
       setLoading(false);
       return;
     }
@@ -120,7 +132,7 @@ export default function LoginPage() {
     }
 
     trackFunnel('regisztracio_kesz'); // keepalive: az átirányítás közben is elmegy
-    window.location.href = '/';
+    window.location.href = getReturnPath();
   }
 
   const registerDisabled = !isLogin && usernameStatus !== 'available';
