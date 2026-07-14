@@ -76,63 +76,75 @@ export default function LoginPage() {
     setUsername(raw.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20));
   }
 
+  // A leggyakoribb Supabase-hibaüzenetek magyarul — a ritkábbak angolul maradnak.
+  function authErrorHu(msg: string): string {
+    if (msg.includes('Invalid login credentials')) return 'Hibás email-cím vagy jelszó.';
+    if (msg.includes('Email not confirmed')) return 'Az email-címed még nincs megerősítve — nézd meg a postafiókod (a spam mappát is).';
+    if (msg.includes('rate limit') || msg.includes('Too many')) return 'Túl sok próbálkozás — várj egy-két percet, és próbáld újra.';
+    return msg;
+  }
+
   async function handleSubmit() {
     if (loading) return;
     setLoading(true);
     setMessage('');
+    try {
+      // Mobilon az automatikus kiegészítés gyakran szóközt fűz az email végére.
+      const cleanEmail = email.trim();
 
-    // ---------- BEJELENTKEZÉS ----------
-    if (isLogin) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setMessage(error.message);
-      else { window.location.href = getReturnPath(); return; }
-      setLoading(false);
-      return;
-    }
+      // ---------- BEJELENTKEZÉS ----------
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+        if (error) setMessage(authErrorHu(error.message));
+        else { window.location.href = getReturnPath(); }
+        return;
+      }
 
-    // ---------- REGISZTRÁCIÓ ----------
-    if (username.length < 3) {
-      setMessage('A felhasználónév legalább 3 karakter legyen.');
-      setLoading(false);
-      return;
-    }
-    if (usernameStatus === 'taken') {
-      setMessage('Ez a felhasználónév már foglalt.');
-      setLoading(false);
-      return;
-    }
+      // ---------- REGISZTRÁCIÓ ----------
+      if (username.length < 3) {
+        setMessage('A felhasználónév legalább 3 karakter legyen.');
+        return;
+      }
+      if (usernameStatus === 'taken') {
+        setMessage('Ez a felhasználónév már foglalt.');
+        return;
+      }
 
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
-    if (signUpError) {
-      setMessage(signUpError.message);
-      setLoading(false);
-      return;
-    }
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email: cleanEmail, password });
+      if (signUpError) {
+        setMessage(authErrorHu(signUpError.message));
+        return;
+      }
 
-    let session = signUpData.session;
-    const userId = signUpData.user?.id;
-    if (!session) {
-      const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
-      session = signInData.session ?? null;
-    }
-    if (!session || !userId) {
-      setMessage('Regisztráció sikeres! Jelentkezz be. (Ha megerősítő emailt kaptál, előbb erősítsd meg.)');
-      setIsLogin(true);
-      setLoading(false);
-      return;
-    }
+      let session = signUpData.session;
+      const userId = signUpData.user?.id;
+      if (!session) {
+        const { data: signInData } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+        session = signInData.session ?? null;
+      }
+      if (!session || !userId) {
+        setMessage('Regisztráció sikeres! Jelentkezz be. (Ha megerősítő emailt kaptál, előbb erősítsd meg.)');
+        setIsLogin(true);
+        return;
+      }
 
-    const { error: profileError } = await (supabase.from('profiles') as any)
-      .insert({ user_id: userId, username });
-    if (profileError) {
-      if (profileError.code === '23505') setMessage('Ez a felhasználónév közben foglalt lett. Válassz másikat!');
-      else setMessage('A fiók létrejött, de a felhasználónév mentése nem sikerült: ' + profileError.message);
-      setLoading(false);
-      return;
-    }
+      const { error: profileError } = await (supabase.from('profiles') as any)
+        .insert({ user_id: userId, username });
+      if (profileError) {
+        if (profileError.code === '23505') setMessage('Ez a felhasználónév közben foglalt lett. Válassz másikat!');
+        else setMessage('A fiók létrejött, de a felhasználónév mentése nem sikerült: ' + profileError.message);
+        return;
+      }
 
-    trackFunnel('regisztracio_kesz'); // keepalive: az átirányítás közben is elmegy
-    window.location.href = getReturnPath();
+      trackFunnel('regisztracio_kesz'); // keepalive: az átirányítás közben is elmegy
+      window.location.href = getReturnPath();
+    } catch {
+      setMessage(
+        'Nem sikerült elérni a szervert. Ellenőrizd a netkapcsolatot — ha pedig appon belüli böngészőből nyitottad meg (pl. Messenger), próbáld meg Chrome-ban vagy Safariban.'
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   const registerDisabled = !isLogin && usernameStatus !== 'available';
