@@ -15,6 +15,10 @@ export interface DailyIndex {
   topActive: { id: number; title: string; total: number } | null;
   /** A mai nap magyar formátumban, Budapest szerint. */
   day: string;
+  /** True, ha az elmúlt 48 órában érkezett időbélyeges szavazat — ettől "mai" az index. */
+  friss: boolean;
+  /** Az utolsó szavazás napja magyar formátumban (null = nincs időbélyeges szavazat). */
+  utolsoAktivitas: string | null;
 }
 
 interface PostRow {
@@ -110,5 +114,20 @@ export async function fetchDailyIndex(): Promise<DailyIndex> {
     day: 'numeric',
   }).format(new Date());
 
-  return { pct, totalVotes, delta, topDivisive, topActive, day };
+  // Frissesség: csak akkor "mai" az index, ha 48 órán belül érkezett szavazat.
+  // Régi adatnál a felületek az utolsó aktivitás napját mondják ki — nem adnak el
+  // hónapokkal ezelőtti szavazatokat mai hangulatként.
+  const lastVoteAt = voteRows.length > 0 ? voteRows[voteRows.length - 1].created_at : null;
+  const friss =
+    lastVoteAt !== null && Date.now() - new Date(lastVoteAt).getTime() <= 48 * 60 * 60 * 1000;
+  const utolsoAktivitas = lastVoteAt
+    ? new Intl.DateTimeFormat('hu-HU', {
+        timeZone: 'Europe/Budapest',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }).format(new Date(lastVoteAt))
+    : null;
+
+  return { pct, totalVotes, delta, topDivisive, topActive, day, friss, utolsoAktivitas };
 }

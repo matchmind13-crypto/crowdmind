@@ -13,6 +13,10 @@ export interface SeoPost {
   yesVotes: number;
   noVotes: number;
   createdAt: string;
+  /** 'prediction' a jóslatoknál — a metaszöveg állapot-függő. */
+  type: string | null;
+  resolveAt: string | null;
+  outcome: 'yes' | 'no' | null;
 }
 
 interface PostRow {
@@ -23,12 +27,17 @@ interface PostRow {
   yes_votes: number | null;
   no_votes: number | null;
   created_at: string;
+  type: string | null;
+  resolve_at: string | null;
+  outcome: string | null;
 }
 
 export async function fetchPostForSeo(id: number): Promise<SeoPost | null> {
   if (!Number.isFinite(id) || id <= 0) return null;
   const [postRows, voteRows] = await Promise.all([
-    sbRest<PostRow[]>(`posts?id=eq.${id}&select=id,title,description,category,yes_votes,no_votes,created_at&limit=1`),
+    sbRest<PostRow[]>(
+      `posts?id=eq.${id}&select=id,title,description,category,yes_votes,no_votes,created_at,type,resolve_at,outcome&limit=1`,
+    ),
     sbRest<{ vote: string }[]>(`votes?post_id=eq.${id}&select=vote`),
   ]);
   const post = postRows?.[0];
@@ -49,5 +58,8 @@ export async function fetchPostForSeo(id: number): Promise<SeoPost | null> {
     yesVotes: yes,
     noVotes: no,
     createdAt: post.created_at,
+    type: post.type,
+    resolveAt: post.resolve_at,
+    outcome: post.outcome === 'yes' || post.outcome === 'no' ? post.outcome : null,
   };
 }

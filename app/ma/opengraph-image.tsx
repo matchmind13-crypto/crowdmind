@@ -73,7 +73,7 @@ export default async function Image() {
             <span style={{ fontSize: 52, fontWeight: 800, color: '#a78bfa', marginTop: 16 }}>%</span>
           </div>
           <div style={{ display: 'flex', fontSize: 28, color: '#d1d5db' }}>
-            a magyar közösség hangulata ma{' '}
+            a magyar közösség hangulata {idx.friss ? 'ma' : 'az eddigi szavazatok alapján'}{' '}
             <span style={{ color: '#4ade80', fontWeight: 700, marginLeft: 8 }}>pozitív</span>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default async function Image() {
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 21, fontWeight: 700, letterSpacing: 1.5, color: '#f87171' }}>
               <span style={{ display: 'flex', width: 12, height: 12, borderRadius: 999, background: '#ef4444' }} />
-              A NAP LEGMEGOSZTÓBB TÉMÁJA
+              {idx.friss ? 'A NAP LEGMEGOSZTÓBB TÉMÁJA' : 'A LEGMEGOSZTÓBB TÉMA'}
             </span>
             <span style={{ fontSize: 32, fontWeight: 700, color: '#f4f4f6', marginTop: 8 }}>
               {idx.topDivisive.title.length > 62

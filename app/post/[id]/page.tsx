@@ -19,9 +19,20 @@ export async function generateMetadata({
 
   const total = post.yesVotes + post.noVotes;
   const pct = total > 0 ? Math.round((post.yesVotes / total) * 100) : 50;
-  const description =
-    (post.description ? `${post.description.slice(0, 130).trim()}${post.description.length > 130 ? '…' : ''} ` : '') +
-    `A közösség ${pct}%-a mellette (${total} szavazat). Szavazz te is a CrowdMind-on!`;
+  const lead = post.description
+    ? `${post.description.slice(0, 130).trim()}${post.description.length > 130 ? '…' : ''} `
+    : '';
+  // Jóslatnál a metaszöveg az állapotot tükrözi — lejárt kérdésre nem hívunk szavazni.
+  const lejart = post.resolveAt !== null && new Date(post.resolveAt).getTime() <= Date.now();
+  let zaras: string;
+  if (post.type === 'prediction' && post.outcome) {
+    zaras = `A jóslat eldőlt: ${post.outcome === 'yes' ? 'BEJÖTT' : 'NEM JÖTT BE'}. A tippelők ${pct}%-a mondott igent (${total} szavazat).`;
+  } else if (post.type === 'prediction' && lejart) {
+    zaras = `A szavazás lezárult, az eredmény rögzítésére vár — ${pct}% tippelt mellette (${total} szavazat).`;
+  } else {
+    zaras = `A közösség ${pct}%-a mellette (${total} szavazat). Szavazz te is a CrowdMind-on!`;
+  }
+  const description = lead + zaras;
 
   return {
     title: post.title,

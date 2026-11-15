@@ -70,12 +70,16 @@ export function PredictionStatus({
     );
   }
 
-  // Lejárt, de még nincs eredmény
+  // Lejárt, de még nincs eredmény — kiírjuk, mióta várakozik, nem ígérünk "hamarosan"-t.
   if (closed) {
+    const napokOta = resolveAt
+      ? Math.floor((Date.now() - new Date(resolveAt).getTime()) / 86_400_000)
+      : 0;
     return (
       <div className="mt-4 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3.5 text-sm text-fg-soft">
         <Hourglass size={16} className="shrink-0 text-amber-400" />
-        A szavazás lezárult — az eredmény rögzítésére vár. Hamarosan kiderül, kinek lett igaza!
+        A szavazás lezárult — az eredmény rögzítésére vár
+        {napokOta >= 2 ? ` (${napokOta} napja)` : ''}.
       </div>
     );
   }

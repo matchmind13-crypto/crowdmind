@@ -14,7 +14,9 @@ import { ShareDailyIndex, CopyIndexLink } from '@/components/ShareDailyIndex';
  */
 export async function generateMetadata(): Promise<Metadata> {
   const idx = await fetchDailyIndex();
-  const description = `A magyar közösség hangulata ma ${idx.pct}% pozitív (${idx.totalVotes} valódi szavazat alapján). Nézd meg, mely témák mozgatják — és szavazz te is!`;
+  const description = idx.friss
+    ? `A magyar közösség hangulata ma ${idx.pct}% pozitív (${idx.totalVotes} valódi szavazat alapján). Nézd meg, mely témák mozgatják — és szavazz te is!`
+    : `A CrowdMind közhangulat-indexe ${idx.pct}% pozitív, ${idx.totalVotes} valódi szavazat alapján${idx.utolsoAktivitas ? ` (utolsó szavazás: ${idx.utolsoAktivitas})` : ''}. Mozdítsd meg te — szavazz!`;
   return {
     title: `Napi közhangulat-index — ${idx.pct}% pozitív`,
     description,
@@ -60,8 +62,15 @@ export default async function DailyIndexPage() {
           {idx.pct}<span className="text-4xl text-accent-soft sm:text-5xl">%</span>
         </p>
         <p className="mt-2 text-lg font-semibold text-fg-soft">
-          a magyar közösség hangulata ma <span className="text-positive">pozitív</span>
+          a magyar közösség hangulata {idx.friss ? 'ma' : 'az eddigi szavazatok alapján'}{' '}
+          <span className="text-positive">pozitív</span>
         </p>
+        {!idx.friss && idx.utolsoAktivitas && (
+          <p className="mx-auto mt-3 max-w-md rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-fg-soft">
+            Mostanában nem érkezett új szavazat — az index a legutóbbi aktivitás
+            ({idx.utolsoAktivitas}) állapotát mutatja.
+          </p>
+        )}
         <p className="mt-1.5 flex items-center justify-center gap-2 text-sm text-muted">
           {idx.delta === null ? (
             <>
@@ -102,7 +111,7 @@ export default async function DailyIndexPage() {
           >
             <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-negative">
               <Flame size={13} />
-              A nap legmegosztóbb témája
+              {idx.friss ? 'A nap legmegosztóbb témája' : 'A legmegosztóbb téma'}
             </p>
             <p className="mt-1.5 font-semibold text-fg">{idx.topDivisive.title}</p>
             {idx.topDivisive.description.length > 0 && (
@@ -125,7 +134,7 @@ export default async function DailyIndexPage() {
           >
             <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-accent-soft">
               <Activity size={13} />
-              A nap legaktívabb témája
+              {idx.friss ? 'A nap legaktívabb témája' : 'A legaktívabb téma'}
             </p>
             <p className="mt-1.5 font-semibold text-fg">{idx.topActive.title}</p>
             <p className="mt-1.5 text-xs text-muted">{idx.topActive.total} szavazat</p>
@@ -149,7 +158,7 @@ export default async function DailyIndexPage() {
       </section>
 
       <p className="text-center text-xs text-muted">
-        CrowdMind · valódi közösségi szavazatokból, naponta frissülve · crowdmind.dev/ma
+        CrowdMind · valódi közösségi szavazatokból, minden szavazattal frissülve · crowdmind.dev/ma
       </p>
     </AppShell>
   );
