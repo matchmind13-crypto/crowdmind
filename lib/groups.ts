@@ -72,7 +72,7 @@ export async function createGroup(
     .single();
   if (error) {
     if (error.code === '23505') return { ok: false, error: 'Már van ilyen nevű csoport.' };
-    if (tableMissing(error.message)) return { ok: false, error: 'A csoportok hamarosan elérhetők.' };
+    if (tableMissing(error.message)) return { ok: false, error: 'A csoportok most nem érhetők el — próbáld újra később.' };
     return { ok: false, error: 'A létrehozás nem sikerült.' };
   }
 

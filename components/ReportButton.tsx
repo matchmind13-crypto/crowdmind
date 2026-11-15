@@ -44,7 +44,7 @@ export function ReportButton({
     } else if (res.needsLogin) {
       setMsg('A jelentéshez jelentkezz be.');
     } else if (res.unavailable) {
-      setMsg('A jelentés funkció hamarosan elérhető.');
+      setMsg('A jelentés-küldés most nem működik — próbáld újra később.');
     } else {
       setMsg('Nem sikerült elküldeni — próbáld újra később.');
     }

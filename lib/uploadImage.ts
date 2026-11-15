@@ -48,10 +48,10 @@ export async function uploadPostMedia(
     .upload(path, file, { contentType: file.type, cacheControl: '31536000' });
   if (error) {
     if (/bucket|not found/i.test(error.message)) {
-      return { ok: false, error: 'A feltöltés hamarosan elérhető — addig URL-t adhatsz meg.' };
+      return { ok: false, error: 'A feltöltés most nem működik — próbáld újra később, vagy adj meg URL-t.' };
     }
     if (/mime|not supported|content.?type/i.test(error.message)) {
-      return { ok: false, error: 'A videó-feltöltés hamarosan elérhető — a tároló frissítésre vár.' };
+      return { ok: false, error: 'A videó-feltöltés most nem működik — próbáld újra később.' };
     }
     if (/exceeded|size|payload/i.test(error.message)) {
       return { ok: false, error: 'A fájl túl nagy a tárolónak.' };
@@ -84,7 +84,7 @@ export async function uploadAvatar(
     .eq('user_id', session.user.id)
     .maybeSingle();
   if (profErr && /avatar_url|column|schema cache/i.test(profErr.message)) {
-    return { ok: false, error: 'A profilkép funkció hamarosan elérhető.' };
+    return { ok: false, error: 'A profilkép-feltöltés most nem működik — próbáld újra később.' };
   }
 
   const ext = IMAGE_TYPES[file.type];

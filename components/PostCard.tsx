@@ -62,7 +62,7 @@ export function PostCard({ post }: { post: FeedPost }) {
       return;
     }
     if (res.unavailable) {
-      setFollowMsg('A követés funkció hamarosan elérhető.');
+      setFollowMsg('A követés most nem érhető el — próbáld újra később.');
       setTimeout(() => setFollowMsg(null), 3500);
       return;
     }

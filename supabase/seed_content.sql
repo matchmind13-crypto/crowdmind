@@ -1,3 +1,7 @@
+-- ⚠️ ARCHÍV — NE FUTTASD ÚJRA! Ez a 2026. júliusi indulás egyszeri seed-je;
+-- lejárt határidejű jóslatokat (vb-döntő, forint, melegrekord) is tartalmaz,
+-- újrafuttatva elavult, megtévesztő tartalmat vetne az éles adatbázisba.
+--
 -- Seed-tartalom: 47 indító kérdés a hivatalos 'crowdmind' fiók alá.
 -- A dátumok az elmúlt ~13 napra vannak széthúzva (napi 3-4 kérdés üteme),
 -- minden számláló nulláról indul (őszinte start), 4 kérdés határidős jóslat.

@@ -45,7 +45,7 @@ export async function POST(request: Request) {
   });
   if (error) {
     if (/relation|schema cache/i.test(error.message)) {
-      return NextResponse.json({ error: 'A visszajelzés funkció hamarosan elérhető.' }, { status: 503 });
+      return NextResponse.json({ error: 'A visszajelzés-küldés most nem működik — próbáld újra később.' }, { status: 503 });
     }
     console.error('Visszajelzés mentési hiba:', error.message);
     return NextResponse.json({ error: 'Nem sikerült menteni. Próbáld újra!' }, { status: 500 });

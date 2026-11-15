@@ -196,7 +196,7 @@ function CommentRow({
       return;
     }
     if (res.unavailable) {
-      setLikeMsg(target === -1 ? 'A dislike hamarosan elérhető.' : 'A lájk funkció hamarosan elérhető.');
+      setLikeMsg('A szavazat most nem rögzíthető — próbáld újra később.');
       setTimeout(() => setLikeMsg(null), 3500);
       return;
     }

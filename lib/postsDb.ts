@@ -312,7 +312,7 @@ export async function addComment(
   if (error) {
     // Ha a parent_id oszlop még nem létezik, a válasz funkció udvariasan jelez.
     if (parentId && /parent_id|column|schema cache/i.test(error.message)) {
-      return { ok: false, error: 'A válasz funkció hamarosan elérhető.' };
+      return { ok: false, error: 'A válasz most nem küldhető el — próbáld újra később.' };
     }
     return { ok: false, error: error.message };
   }
