@@ -92,7 +92,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ reply });
   } catch (e) {
     console.error('Asszisztens hiba:', e);
-    const msg = e instanceof Anthropic.APIError ? `AI hiba (${e.status})` : 'Az asszisztens nem elérhető';
+    const kreditHiany =
+      e instanceof Anthropic.APIError && String(e.message ?? '').includes('credit balance');
+    const msg = kreditHiany
+      ? 'Az asszisztens átmenetileg szünetel, amíg az AI-szolgáltatás kerete fel nem töltődik. Az oldal többi része működik.'
+      : 'Az asszisztens most nem elérhető — próbáld meg később.';
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 }

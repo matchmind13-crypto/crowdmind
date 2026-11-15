@@ -220,7 +220,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ analysis, cached: false, generatedAt, commentsCount: comments.length, votes: { yes, no } });
   } catch (e) {
     console.error('AI elemzés hiba:', e);
-    const msg = e instanceof Anthropic.APIError ? `AI hiba (${e.status})` : 'AI elemzés sikertelen';
+    const kreditHiany =
+      e instanceof Anthropic.APIError && String(e.message ?? '').includes('credit balance');
+    const msg = kreditHiany
+      ? 'Az AI-elemzés átmenetileg szünetel, amíg az AI-szolgáltatás kerete fel nem töltődik. A korábbi elemzések elérhetők, az oldal többi része működik.'
+      : 'Az AI-elemzés most nem sikerült — próbáld meg később.';
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 }

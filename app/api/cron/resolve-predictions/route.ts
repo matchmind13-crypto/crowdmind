@@ -91,6 +91,13 @@ export async function GET(request: Request) {
         return { id: p.id, title: p.title, dontes: 'bizonytalan', indoklas: verdict.indoklas };
       } catch (e) {
         console.error('Jóslat-ellenőrzési hiba:', p.id, e);
+        // Nyomot hagyunk az events táblában, hogy a döntnök hibája ne tűnhessen el
+        // némán — az admin pult ebből mutatja ki, ha az AI-lánc nem működik.
+        try {
+          await service.from('events').insert({ name: 'ai_hiba' });
+        } catch {
+          // a nyom-írás nem kritikus
+        }
         return { id: p.id, title: p.title, dontes: 'hiba' };
       }
     }),

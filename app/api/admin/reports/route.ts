@@ -174,11 +174,44 @@ export async function GET(request: Request) {
       // az events tábla még nem létezik
     }
 
+    // AI-lánc egészsége: a jóslat-döntnök hibanyomai (events: 'ai_hiba').
+    // Ha nő, az AI-hívások buknak el (tipikusan: elfogyott az Anthropic-kredit).
+    let aiHiba: { last7: number; total: number; lastAt: string | null } = {
+      last7: 0,
+      total: 0,
+      lastAt: null,
+    };
+    try {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const [tot, w, last] = await Promise.all([
+        admin.from('events').select('id', { count: 'exact', head: true }).eq('name', 'ai_hiba'),
+        admin
+          .from('events')
+          .select('id', { count: 'exact', head: true })
+          .eq('name', 'ai_hiba')
+          .gte('created_at', weekAgo),
+        admin
+          .from('events')
+          .select('created_at')
+          .eq('name', 'ai_hiba')
+          .order('created_at', { ascending: false })
+          .limit(1),
+      ]);
+      aiHiba = {
+        total: tot.count ?? 0,
+        last7: w.count ?? 0,
+        lastAt: ((last.data ?? []) as any[])[0]?.created_at ?? null,
+      };
+    } catch {
+      // az events tábla még nem létezik — jelzés nélkül megyünk
+    }
+
     return NextResponse.json({
       reports: enriched,
       pendingPredictions,
       feedbacks,
       funnel,
+      aiHiba,
       stats: {
         users: profiles.count ?? 0,
         posts: posts.count ?? 0,

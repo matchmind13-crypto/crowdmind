@@ -45,6 +45,7 @@ interface AdminData {
   pendingPredictions?: PendingPrediction[];
   feedbacks?: AdminFeedback[];
   funnel?: FunnelRow[];
+  aiHiba?: { last7: number; total: number; lastAt: string | null };
   stats: { users: number; posts: number; comments: number; votes: number };
 }
 
@@ -200,6 +201,20 @@ export function AdminView() {
           </div>
         ))}
       </div>
+
+      {/* AI-lánc egészsége: a jóslat-döntnök hibanyomai (events: 'ai_hiba') */}
+      {(data.aiHiba?.last7 ?? 0) > 0 && (
+        <div className="mt-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-fg">
+          <p className="font-semibold">
+            ⚠️ Az AI-döntnök az elmúlt 7 napban {data.aiHiba!.last7} alkalommal hibára futott.
+          </p>
+          <p className="mt-1 text-muted">
+            Tipikus ok: elfogyott az Anthropic-kredit (console.anthropic.com → Plans &amp; Billing).
+            Utolsó hiba:{' '}
+            {data.aiHiba!.lastAt ? new Date(data.aiHiba!.lastAt).toLocaleString('hu-HU') : '—'}.
+          </p>
+        </div>
+      )}
 
       {/* Regisztrációs tölcsér — névtelen, munkamenet-alapú lépés-számlálók */}
       {(data.funnel?.length ?? 0) > 0 && (
