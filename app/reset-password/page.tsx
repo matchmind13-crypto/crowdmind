@@ -35,10 +35,26 @@ export default function ResetPasswordPage() {
     if (password.length < 8) { setError('A jelszó legalább 8 karakter legyen.'); return; }
     if (password !== password2) { setError('A két jelszó nem egyezik.'); return; }
     setSaving(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    if (error) { setError(error.message); setSaving(false); return; }
-    setDone(true);
-    setTimeout(() => { window.location.href = '/'; }, 2000);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) { setError(error.message); return; }
+      setDone(true);
+      setTimeout(() => {
+        // Vissza oda, ahonnan a felhasználó jött (ugyanaz a mechanizmus, mint a loginnál).
+        let cel = '/';
+        try {
+          const p = window.sessionStorage.getItem('cm_return_to');
+          if (p && p.startsWith('/') && !p.startsWith('/login')) cel = p;
+        } catch {
+          // privát mód — nem kritikus
+        }
+        window.location.href = cel;
+      }, 2000);
+    } catch {
+      setError('Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (

@@ -50,24 +50,29 @@ export function CommunitySnapshot({
     }
     setBusy(true);
     setMsg(null);
-    // Az új állás kiszámítása a szavazat UTÁN — ez kerül az értesítésbe.
-    const nYes = yes + (v === 'yes' ? 1 : 0);
-    const nTotal = total + 1;
-    const standing = `${Math.round((nYes / nTotal) * 100)}% mellette (${nTotal} szavazat)`;
-    const res = await castVote(postId, v, standing);
-    if (res.ok) {
-      if (v === 'yes') setYes((n) => n + 1);
-      else if (v === 'no') setNo((n) => n + 1);
-      else setNeutral((n) => n + 1);
-      setMsg({ text: 'Szavazatod rögzítve. Köszönjük!' });
-    } else if (res.already) {
-      setMsg({ text: 'Erre a posztra már szavaztál.' });
-    } else if (res.needsLogin) {
-      setMsg({ text: 'A szavazáshoz jelentkezz be.', needsLogin: true });
-    } else {
-      setMsg({ text: res.error ?? 'Hiba a szavazáskor.' });
+    try {
+      // Az új állás kiszámítása a szavazat UTÁN — ez kerül az értesítésbe.
+      const nYes = yes + (v === 'yes' ? 1 : 0);
+      const nTotal = total + 1;
+      const standing = `${Math.round((nYes / nTotal) * 100)}% mellette (${nTotal} szavazat)`;
+      const res = await castVote(postId, v, standing);
+      if (res.ok) {
+        if (v === 'yes') setYes((n) => n + 1);
+        else if (v === 'no') setNo((n) => n + 1);
+        else setNeutral((n) => n + 1);
+        setMsg({ text: 'Szavazatod rögzítve. Köszönjük!' });
+      } else if (res.already) {
+        setMsg({ text: 'Erre a posztra már szavaztál.' });
+      } else if (res.needsLogin) {
+        setMsg({ text: 'A szavazáshoz jelentkezz be.', needsLogin: true });
+      } else {
+        setMsg({ text: res.error ?? 'Hiba a szavazáskor.' });
+      }
+    } catch {
+      setMsg({ text: 'Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra.' });
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   return (

@@ -17,21 +17,31 @@ export function AccountDataPanel() {
     if (exporting) return;
     setExporting(true);
     setExportMsg(null);
-    const res = await exportMyData();
-    setExportMsg(res.ok ? 'Letöltés elindítva. 📦' : (res.error ?? 'Hiba történt.'));
-    setExporting(false);
+    try {
+      const res = await exportMyData();
+      setExportMsg(res.ok ? 'Letöltés elindítva. 📦' : (res.error ?? 'Hiba történt.'));
+    } catch {
+      setExportMsg('Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra.');
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function handleDelete() {
     setDelStep('deleting');
     setDelError(null);
-    const res = await deleteMyAccount();
-    if (res.ok) {
-      window.location.href = '/?torolve=1';
-      return;
+    try {
+      const res = await deleteMyAccount();
+      if (res.ok) {
+        window.location.href = '/?torolve=1';
+        return;
+      }
+      setDelError(res.error ?? 'A törlés nem sikerült.');
+      setDelStep('confirm');
+    } catch {
+      setDelError('Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra.');
+      setDelStep('confirm');
     }
-    setDelError(res.error ?? 'A törlés nem sikerült.');
-    setDelStep('confirm');
   }
 
   return (

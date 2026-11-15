@@ -22,22 +22,26 @@ export function PasswordChanger() {
     if (!canSave) return;
     setSaving(true);
     setMsg(null);
-    const { error } = await supabase.auth.updateUser({ password: pw1 });
-    if (error) {
-      setMsg({
-        text: /same|different/i.test(error.message)
-          ? 'Az új jelszó nem egyezhet a régivel.'
-          : 'A módosítás nem sikerült — próbáld újra.',
-        ok: false,
-      });
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pw1 });
+      if (error) {
+        setMsg({
+          text: /same|different/i.test(error.message)
+            ? 'Az új jelszó nem egyezhet a régivel.'
+            : 'A módosítás nem sikerült — próbáld újra.',
+          ok: false,
+        });
+        return;
+      }
+      setPw1('');
+      setPw2('');
+      setEditing(false);
+      setMsg({ text: 'Jelszó módosítva. ✓', ok: true });
+    } catch {
+      setMsg({ text: 'Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra.', ok: false });
+    } finally {
       setSaving(false);
-      return;
     }
-    setPw1('');
-    setPw2('');
-    setEditing(false);
-    setMsg({ text: 'Jelszó módosítva. ✓', ok: true });
-    setSaving(false);
   }
 
   if (!editing) {

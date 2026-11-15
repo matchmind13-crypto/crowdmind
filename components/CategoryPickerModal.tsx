@@ -23,10 +23,15 @@ export function CategoryPickerModal({ onClose }: { onClose: () => void }) {
     if (selected.length < MIN_INTERESTS) return;
     setSaving(true);
     setError('');
-    const res = await save(selected);
-    setSaving(false);
-    if (!res.ok) { setError(res.error ?? 'Hiba a mentéskor'); return; }
-    onClose();
+    try {
+      const res = await save(selected);
+      if (!res.ok) { setError(res.error ?? 'Hiba a mentéskor'); return; }
+      onClose();
+    } catch {
+      setError('Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   const missing = MIN_INTERESTS - selected.length;

@@ -62,14 +62,19 @@ export function InterestsOnboarding() {
     if (selected.length < MIN_INTERESTS || saving) return;
     setSaving(true);
     setError('');
-    const res = await save(selected);
-    setSaving(false);
-    if (!res.ok) {
-      setError(res.error ?? 'Nem sikerült menteni — próbáld újra!');
-      return;
+    try {
+      const res = await save(selected);
+      if (!res.ok) {
+        setError(res.error ?? 'Nem sikerült menteni — próbáld újra!');
+        return;
+      }
+      trackFunnel('temakorok_kesz');
+      // Sikernél a preferred frissül, és a kapu magától eltűnik.
+    } catch {
+      setError('Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra!');
+    } finally {
+      setSaving(false);
     }
-    trackFunnel('temakorok_kesz');
-    // Sikernél a preferred frissül, és a kapu magától eltűnik.
   }
 
   const missing = Math.max(0, MIN_INTERESTS - selected.length);

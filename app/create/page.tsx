@@ -43,17 +43,22 @@ export default function CreatePostPage() {
     if (!file || uploading) return;
     setUploading(true);
     setUploadMsg(null);
-    const res = await uploadPostMedia(file);
-    if (res.ok) {
-      setMediaUrl(res.url);
-      setUploadMsg({
-        text: res.kind === 'video' ? 'Videó feltöltve — a téma alján fog megjelenni. ✓' : 'Kép feltöltve — a téma alján fog megjelenni. ✓',
-        ok: true,
-      });
-    } else {
-      setUploadMsg({ text: res.error, ok: false });
+    try {
+      const res = await uploadPostMedia(file);
+      if (res.ok) {
+        setMediaUrl(res.url);
+        setUploadMsg({
+          text: res.kind === 'video' ? 'Videó feltöltve — a téma alján fog megjelenni. ✓' : 'Kép feltöltve — a téma alján fog megjelenni. ✓',
+          ok: true,
+        });
+      } else {
+        setUploadMsg({ text: res.error, ok: false });
+      }
+    } catch {
+      setUploadMsg({ text: 'Váratlan hiba a feltöltésnél — ellenőrizd a netkapcsolatot, és próbáld újra.', ok: false });
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
   }
 
   useEffect(() => {
@@ -70,17 +75,22 @@ export default function CreatePostPage() {
     }
     setSaving(true);
     setError('');
-    const res = await createPost({
-      title, category, subcategory, type, body, mediaUrl,
-      resolveAt: type === 'prediction' && resolveAt ? new Date(resolveAt).toISOString() : null,
-      groupId: groupId === '' ? null : groupId,
-    });
-    if (!res.ok) {
-      setError(res.error ?? 'Hiba a mentéskor');
+    try {
+      const res = await createPost({
+        title, category, subcategory, type, body, mediaUrl,
+        resolveAt: type === 'prediction' && resolveAt ? new Date(resolveAt).toISOString() : null,
+        groupId: groupId === '' ? null : groupId,
+      });
+      if (!res.ok) {
+        setError(res.error ?? 'Hiba a mentéskor');
+        return;
+      }
+      window.location.href = '/';
+    } catch {
+      setError('Váratlan hiba a mentéskor — ellenőrizd a netkapcsolatot, és próbáld újra.');
+    } finally {
       setSaving(false);
-      return;
     }
-    window.location.href = '/';
   }
 
   return (

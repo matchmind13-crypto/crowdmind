@@ -29,17 +29,22 @@ export function GroupsDirectory() {
     if (busy || !name.trim()) return;
     setBusy(true);
     setMsg(null);
-    const res = await createGroup(name, desc);
-    if (res.ok) {
-      setMsg({ text: `A(z) „${res.group?.name}” csoport létrejött — te vagy az első tagja! 🎉`, ok: true });
-      setName('');
-      setDesc('');
-      setCreating(false);
-      await load();
-    } else {
-      setMsg({ text: res.error ?? 'Hiba történt.', ok: false });
+    try {
+      const res = await createGroup(name, desc);
+      if (res.ok) {
+        setMsg({ text: `A(z) „${res.group?.name}” csoport létrejött — te vagy az első tagja! 🎉`, ok: true });
+        setName('');
+        setDesc('');
+        setCreating(false);
+        await load();
+      } else {
+        setMsg({ text: res.error ?? 'Hiba történt.', ok: false });
+      }
+    } catch {
+      setMsg({ text: 'Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra.', ok: false });
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   const topicCount = (id: number) => (posts ?? []).filter((p) => p.groupId === id).length;

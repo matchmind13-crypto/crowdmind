@@ -55,17 +55,22 @@ export function GroupView({ name }: { name: string }) {
     if (busy || !group) return;
     setBusy(true);
     setJoinMsg(null);
-    const res = await toggleGroupMembership(group.id);
-    if (res.needsLogin) {
-      setJoinMsg({ text: 'A csatlakozáshoz jelentkezz be.', needsLogin: true });
-    } else if (res.unavailable) {
-      setJoinMsg({ text: 'A csoportok hamarosan elérhetők.' });
-    } else {
-      setMember(res.member);
-      setMembers((m) => (m === null ? m : Math.max(0, m + (res.member ? 1 : -1))));
-      setJoinMsg({ text: res.member ? 'Csatlakoztál a csoporthoz! 🎉' : 'Kiléptél a csoportból.' });
+    try {
+      const res = await toggleGroupMembership(group.id);
+      if (res.needsLogin) {
+        setJoinMsg({ text: 'A csatlakozáshoz jelentkezz be.', needsLogin: true });
+      } else if (res.unavailable) {
+        setJoinMsg({ text: 'A csoport-tagság most nem érhető el — próbáld újra később.' });
+      } else {
+        setMember(res.member);
+        setMembers((m) => (m === null ? m : Math.max(0, m + (res.member ? 1 : -1))));
+        setJoinMsg({ text: res.member ? 'Csatlakoztál a csoporthoz! 🎉' : 'Kiléptél a csoportból.' });
+      }
+    } catch {
+      setJoinMsg({ text: 'Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra.' });
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   if (group === null) {

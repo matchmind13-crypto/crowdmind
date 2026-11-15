@@ -47,19 +47,24 @@ export function UsernameSetupModal() {
     if (!user || status !== 'available') return;
     setSaving(true);
     setError('');
-    const { error } = await (supabase.from('profiles') as any).insert({
-      user_id: user.id,
-      username,
-    });
-    if (error) {
-      if (error.code === '23505') setError('Ez a felhasználónév közben foglalt lett. Válassz másikat!');
-      else setError('Nem sikerült menteni: ' + error.message);
+    try {
+      const { error } = await (supabase.from('profiles') as any).insert({
+        user_id: user.id,
+        username,
+      });
+      if (error) {
+        if (error.code === '23505') setError('Ez a felhasználónév közben foglalt lett. Válassz másikat!');
+        else setError('Nem sikerült menteni: ' + error.message);
+        return;
+      }
+      // Siker – frissítjük az oldalt, hogy a fejléc a nevet mutassa.
+      trackFunnel('regisztracio_kesz'); // keepalive: a frissítés közben is elmegy
+      window.location.reload();
+    } catch {
+      setError('Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra.');
+    } finally {
       setSaving(false);
-      return;
     }
-    // Siker – frissítjük az oldalt, hogy a fejléc a nevet mutassa.
-    trackFunnel('regisztracio_kesz'); // keepalive: a frissítés közben is elmegy
-    window.location.reload();
   }
 
   return (

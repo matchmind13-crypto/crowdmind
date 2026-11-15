@@ -178,15 +178,20 @@ function UsernameEditor({ currentUsername, userId }: { currentUsername: string |
     if (status !== 'available' || saving) return;
     setSaving(true);
     setError('');
-    const { error } = await (supabase.from('profiles') as any)
-      .update({ username: value })
-      .eq('user_id', userId);
-    if (error) {
-      setError(error.code === '23505' ? 'Ez a név közben foglalt lett.' : error.message);
+    try {
+      const { error } = await (supabase.from('profiles') as any)
+        .update({ username: value })
+        .eq('user_id', userId);
+      if (error) {
+        setError(error.code === '23505' ? 'Ez a név közben foglalt lett.' : error.message);
+        return;
+      }
+      window.location.reload();
+    } catch {
+      setError('Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra.');
+    } finally {
       setSaving(false);
-      return;
     }
-    window.location.reload();
   }
 
   if (!editing) {

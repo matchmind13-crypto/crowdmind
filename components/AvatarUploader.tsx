@@ -34,30 +34,40 @@ export function AvatarUploader({ userId }: { userId: string }) {
     if (!file || busy) return;
     setBusy(true);
     setMsg(null);
-    const res = await uploadAvatar(file);
-    if (res.ok) {
-      setUrl(res.url);
-      resetMyAvatarCache();
-      setMsg({ text: 'Profilkép beállítva. ✓', ok: true });
-    } else {
-      setMsg({ text: res.error, ok: false });
+    try {
+      const res = await uploadAvatar(file);
+      if (res.ok) {
+        setUrl(res.url);
+        resetMyAvatarCache();
+        setMsg({ text: 'Profilkép beállítva. ✓', ok: true });
+      } else {
+        setMsg({ text: res.error, ok: false });
+      }
+    } catch {
+      setMsg({ text: 'Váratlan hiba a feltöltésnél — ellenőrizd a netkapcsolatot, és próbáld újra.', ok: false });
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   async function handleRemove() {
     if (busy) return;
     setBusy(true);
     setMsg(null);
-    const res = await removeAvatar();
-    if (res.ok) {
-      setUrl(null);
-      resetMyAvatarCache();
-      setMsg({ text: 'Profilkép eltávolítva — vissza az anonim ikonra.', ok: true });
-    } else {
-      setMsg({ text: res.error ?? 'Hiba történt.', ok: false });
+    try {
+      const res = await removeAvatar();
+      if (res.ok) {
+        setUrl(null);
+        resetMyAvatarCache();
+        setMsg({ text: 'Profilkép eltávolítva — vissza az anonim ikonra.', ok: true });
+      } else {
+        setMsg({ text: res.error ?? 'Hiba történt.', ok: false });
+      }
+    } catch {
+      setMsg({ text: 'Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra.', ok: false });
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   return (
