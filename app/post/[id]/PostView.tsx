@@ -7,9 +7,10 @@ import { PanelCard, PanelHeader } from '@/components/PanelCard';
 import { EmbedCodeBox } from '@/components/EmbedCodeBox';
 import { usePosts } from '@/lib/usePosts';
 import { formatCount } from '@/lib/utils';
+import type { PostPageSeoData } from '@/lib/seoPost';
 
 /** Egy poszt saját aloldala – teljes kártya + kapcsolódó témák. Valódi adat. */
-export function PostView({ id }: { id: number }) {
+export function PostView({ id, ssr }: { id: number; ssr?: PostPageSeoData | null }) {
   const { posts, loading } = usePosts();
 
   const post = posts?.find((p) => p.id === id) ?? null;
@@ -76,7 +77,11 @@ export function PostView({ id }: { id: number }) {
       </Link>
 
       {loading ? (
-        <div className="h-96 animate-pulse rounded-2xl border border-line bg-card" />
+        ssr ? (
+          <StaticPostContent data={ssr} />
+        ) : (
+          <div className="h-96 animate-pulse rounded-2xl border border-line bg-card" />
+        )
       ) : !post ? (
         <div className="rounded-2xl border border-line bg-card p-10 text-center">
           <Inbox size={30} className="mx-auto mb-3 text-muted" />
@@ -84,10 +89,58 @@ export function PostView({ id }: { id: number }) {
         </div>
       ) : (
         <>
-          <PostCard post={post} />
+          <PostCard post={post} commentsOpen />
           <EmbedCodeBox postId={post.id} title={post.title} />
         </>
       )}
     </AppShell>
+  );
+}
+
+/** Determinisztikus dátum (UTC) — szerveren és kliensen bájtra ugyanaz, nincs hidratálási eltérés. */
+function datumHu(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getUTCFullYear()}. ${p(d.getUTCMonth() + 1)}. ${p(d.getUTCDate())}.`;
+}
+
+/**
+ * Szerver-renderelt tartalom, amíg az interaktív kártya töltődik:
+ * a keresők (és a JS nélküli látogatók) így a valódi szöveget és a
+ * hozzászólásokat kapják üres csontváz helyett — a felhasználó pedig
+ * azonnal olvashatja a kérdést, mielőtt a kliens-adat megérkezne.
+ */
+function StaticPostContent({ data }: { data: PostPageSeoData }) {
+  const { post, authorName, comments } = data;
+  return (
+    <article className="rounded-2xl border border-line bg-card p-5 sm:p-6">
+      <p className="text-sm text-muted">{post.category}</p>
+      <h1 className="mt-3 text-2xl font-bold leading-snug text-fg">{post.title}</h1>
+      <p className="mt-2 text-sm text-muted">
+        {authorName ?? 'CrowdMind'} · <time dateTime={post.createdAt}>{datumHu(post.createdAt)}</time> ·{' '}
+        {post.yesVotes + post.noVotes} szavazat
+      </p>
+      {post.description && (
+        <p className="mt-4 whitespace-pre-wrap text-[15px] leading-relaxed text-fg-soft">{post.description}</p>
+      )}
+      <section className="mt-6 border-t border-line pt-4">
+        <h2 className="text-base font-semibold text-fg">Hozzászólások ({comments.length})</h2>
+        {comments.length === 0 ? (
+          <p className="mt-2 text-sm text-muted">Még nincs hozzászólás — mondd el elsőként a véleményed!</p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {comments.map((c, i) => (
+              <li key={i} className="rounded-xl border border-line bg-card-2 p-3">
+                <p className="text-xs font-semibold text-muted">
+                  {c.author} · <time dateTime={c.createdAt}>{datumHu(c.createdAt)}</time>
+                </p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-fg-soft">{c.content}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </article>
   );
 }

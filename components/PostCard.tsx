@@ -22,7 +22,7 @@ import { CollapsibleAIAnalysis } from './CollapsibleAIAnalysis';
 import { formatCount } from '@/lib/utils';
 import type { FeedPost } from '@/data/types';
 
-export function PostCard({ post }: { post: FeedPost }) {
+export function PostCard({ post, commentsOpen = false }: { post: FeedPost; commentsOpen?: boolean }) {
   // Mentés állapot – bejelentkezve a fiókhoz kötve (saved_posts tábla), különben helyi.
   const [saved, setSaved] = useState(false);
   const [following, setFollowing] = useState(false);
@@ -159,7 +159,7 @@ export function PostCard({ post }: { post: FeedPost }) {
       />
 
       {/* Lenyitható panelek: előbb hozzászólások, alatta AI elemzés */}
-      <CollapsibleComments postId={post.id} count={post.commentsCount} />
+      <CollapsibleComments postId={post.id} count={post.commentsCount} defaultOpen={commentsOpen} />
       <CollapsibleAIAnalysis postId={post.id} commentsCount={post.commentsCount} views={post.views} />
     </article>
   );

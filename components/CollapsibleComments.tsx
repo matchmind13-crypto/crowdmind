@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessagesSquare, ChevronDown, ImageIcon, Video, Smile, User as UserIcon, Loader2 } from 'lucide-react';
@@ -11,8 +11,17 @@ import type { FeedComment } from '@/data/types';
 
 const SORT_OPTIONS = ['Legújabb', 'Legrégebbi'];
 
-export function CollapsibleComments({ postId, count }: { postId: number; count: number }) {
-  const [open, setOpen] = useState(false);
+export function CollapsibleComments({
+  postId,
+  count,
+  defaultOpen = false,
+}: {
+  postId: number;
+  count: number;
+  /** A poszt saját aloldalán alapból nyitva — a hozzászólások a renderelt DOM részei (SEO). */
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   const myAvatar = useMyAvatar();
   const [sort, setSort] = useState(SORT_OPTIONS[0]);
   const [comments, setComments] = useState<FeedComment[] | null>(null);
@@ -23,6 +32,12 @@ export function CollapsibleComments({ postId, count }: { postId: number; count: 
   const [added, setAdded] = useState(0);
 
   const displayCount = count + added;
+
+  useEffect(() => {
+    if (defaultOpen) void load();
+    // Csak mountkor: a defaultOpen nem változik az élettartam alatt.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function load() {
     setLoadError('');

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { fetchPostForSeo } from '@/lib/seoPost';
+import { fetchPostForSeo, fetchPostPageData, type PostPageSeoData } from '@/lib/seoPost';
+import { SITE_URL } from '@/lib/publicConfig';
 import { PostView } from './PostView';
 
 /**
@@ -54,11 +55,64 @@ export async function generateMetadata({
   };
 }
 
+/**
+ * schema.org DiscussionForumPosting jelölés a keresőknek: a kérdés, a szerző,
+ * a szavazat-/hozzászólás-számok és maguk a hozzászólások is géppel olvashatók.
+ * A `<` escape-elése kötelező, hogy felhasználói tartalom ne zárhassa le a scriptet.
+ */
+function buildJsonLd(data: PostPageSeoData): string {
+  const { post, authorName, comments } = data;
+  const url = `${SITE_URL}/post/${post.id}`;
+  const obj = {
+    '@context': 'https://schema.org',
+    '@type': 'DiscussionForumPosting',
+    '@id': url,
+    url,
+    headline: post.title.slice(0, 110),
+    text: post.description || post.title,
+    datePublished: post.createdAt,
+    author: authorName
+      ? { '@type': 'Person', name: authorName, url: `${SITE_URL}/user/${encodeURIComponent(authorName)}` }
+      : { '@type': 'Organization', name: 'CrowdMind' },
+    articleSection: post.category,
+    interactionStatistic: [
+      {
+        '@type': 'InteractionCounter',
+        interactionType: 'https://schema.org/VoteAction',
+        userInteractionCount: post.yesVotes + post.noVotes,
+      },
+      {
+        '@type': 'InteractionCounter',
+        interactionType: 'https://schema.org/CommentAction',
+        userInteractionCount: comments.length,
+      },
+    ],
+    ...(comments.length > 0 && {
+      comment: comments.slice(0, 25).map((c) => ({
+        '@type': 'Comment',
+        text: c.content,
+        dateCreated: c.createdAt,
+        author: { '@type': 'Person', name: c.author },
+      })),
+    }),
+  };
+  return JSON.stringify(obj).replace(/</g, '\\u003c');
+}
+
 export default async function PostPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <PostView id={Number(id)} />;
+  const postId = Number(id);
+  const data = await fetchPostPageData(postId);
+  return (
+    <>
+      {data && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: buildJsonLd(data) }} />
+      )}
+      <PostView id={postId} ssr={data} />
+    </>
+  );
 }

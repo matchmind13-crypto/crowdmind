@@ -17,6 +17,7 @@ export interface SeoPost {
   type: string | null;
   resolveAt: string | null;
   outcome: 'yes' | 'no' | null;
+  userId: string | null;
 }
 
 interface PostRow {
@@ -30,13 +31,14 @@ interface PostRow {
   type: string | null;
   resolve_at: string | null;
   outcome: string | null;
+  user_id: string | null;
 }
 
 export async function fetchPostForSeo(id: number): Promise<SeoPost | null> {
   if (!Number.isFinite(id) || id <= 0) return null;
   const [postRows, voteRows] = await Promise.all([
     sbRest<PostRow[]>(
-      `posts?id=eq.${id}&select=id,title,description,category,yes_votes,no_votes,created_at,type,resolve_at,outcome&limit=1`,
+      `posts?id=eq.${id}&select=id,title,description,category,yes_votes,no_votes,created_at,type,resolve_at,outcome,user_id&limit=1`,
     ),
     sbRest<{ vote: string }[]>(`votes?post_id=eq.${id}&select=vote`),
   ]);
@@ -61,5 +63,65 @@ export async function fetchPostForSeo(id: number): Promise<SeoPost | null> {
     type: post.type,
     resolveAt: post.resolve_at,
     outcome: post.outcome === 'yes' || post.outcome === 'no' ? post.outcome : null,
+    userId: post.user_id,
+  };
+}
+
+/** Egy hozzászólás szerver-oldali, SEO-barát alakja. */
+export interface SeoComment {
+  author: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface PostPageSeoData {
+  post: SeoPost;
+  /** A poszt szerzőjének felhasználóneve, vagy null, ha nem feloldható. */
+  authorName: string | null;
+  comments: SeoComment[];
+}
+
+interface CommentRow {
+  user_id: string | null;
+  content: string | null;
+  created_at: string;
+}
+
+/**
+ * A poszt-oldal szerver-renderelt tartalmához: poszt + hozzászólások + szerzőnevek.
+ * A fetchPostForSeo hívását a Next kérésen belüli fetch-memoizációja dedupolja
+ * a generateMetadata-beli hívással (azonos REST-URL).
+ */
+export async function fetchPostPageData(id: number): Promise<PostPageSeoData | null> {
+  const post = await fetchPostForSeo(id);
+  if (!post) return null;
+
+  const commentRows =
+    (await sbRest<CommentRow[]>(
+      `comments?post_id=eq.${id}&select=user_id,content,created_at&order=created_at.asc&limit=100`,
+    )) ?? [];
+
+  const userIds = new Set<string>();
+  if (post.userId) userIds.add(post.userId);
+  commentRows.forEach((c) => { if (c.user_id) userIds.add(c.user_id); });
+
+  let names = new Map<string, string>();
+  if (userIds.size > 0) {
+    const profiles = await sbRest<{ user_id: string; username: string }[]>(
+      `profiles?user_id=in.(${[...userIds].join(',')})&select=user_id,username`,
+    );
+    names = new Map((profiles ?? []).map((p) => [p.user_id, p.username]));
+  }
+
+  return {
+    post,
+    authorName: (post.userId && names.get(post.userId)) || null,
+    comments: commentRows
+      .filter((c) => typeof c.content === 'string' && c.content.trim().length > 0)
+      .map((c) => ({
+        author: (c.user_id && names.get(c.user_id)) || 'CrowdMind-tag',
+        content: (c.content as string).trim(),
+        createdAt: c.created_at,
+      })),
   };
 }
