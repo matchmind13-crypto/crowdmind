@@ -7,6 +7,7 @@ import { DebateOfTheDay, pickDebateOfTheDay } from './DebateOfTheDay';
 import { usePreferences } from './PreferencesProvider';
 import { usePosts } from '@/lib/usePosts';
 import { CATEGORIES } from '@/lib/categories';
+import { hotScore } from '@/lib/hot';
 import { cn } from '@/lib/utils';
 
 type Tab = 'neked' | 'felkapott' | 'friss';
@@ -53,11 +54,8 @@ export function Feed() {
       return [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     }
     if (tab === 'felkapott') {
-      return [...list].sort(
-        (a, b) =>
-          (b.yesVotes + b.noVotes + b.commentsCount * 2) -
-          (a.yesVotes + a.noVotes + a.commentsCount * 2),
-      );
+      const now = Date.now();
+      return [...list].sort((a, b) => hotScore(b, now) - hotScore(a, now));
     }
     // "Neked": követett kategóriák elöl (időrendben), utána a többi (időrendben)
     if (!preferred || preferred.length === 0) {
