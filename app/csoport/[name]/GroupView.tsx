@@ -1,14 +1,17 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Users, UsersRound, CalendarDays, FileText, Plus, Check, Loader2, Inbox, ThumbsUp } from 'lucide-react';
+import { Users, UsersRound, CalendarDays, FileText, Plus, Check, Loader2, Inbox, ThumbsUp, Pencil, Pin } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { PanelCard, PanelHeader } from '@/components/PanelCard';
 import { StatCard } from '@/components/StatCard';
 import { PostCompactCard } from '@/components/PostCompactCard';
 import { UserBadge } from '@/components/UserBadge';
 import { usePosts } from '@/lib/usePosts';
-import { fetchGroupByName, isGroupMember, toggleGroupMembership, type GroupInfo } from '@/lib/groups';
+import {
+  fetchGroupByName, isGroupMember, toggleGroupMembership,
+  updateGroupDescription, setGroupPinnedPost, type GroupInfo,
+} from '@/lib/groups';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -23,6 +26,14 @@ export function GroupView({ name }: { name: string }) {
   const [member, setMember] = useState(false);
   const [busy, setBusy] = useState(false);
   const [joinMsg, setJoinMsg] = useState<{ text: string; needsLogin?: boolean } | null>(null);
+  // Gazda-eszközök (csak a csoport létrehozójának): leírás-szerkesztés + téma kitűzése.
+  const [uid, setUid] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [draftDesc, setDraftDesc] = useState('');
+  const [savingDesc, setSavingDesc] = useState(false);
+  const [pinnedId, setPinnedId] = useState<number | null>(null);
+  const [pinBusy, setPinBusy] = useState(false);
+  const [modMsg, setModMsg] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -31,22 +42,37 @@ export function GroupView({ name }: { name: string }) {
       if (!active) return;
       setGroup(g);
       if (!g) return;
-      const [{ data: prof }, m] = await Promise.all([
+      setPinnedId(g.pinnedPostId);
+      const [{ data: prof }, m, { data: sessionData }] = await Promise.all([
         supabase.from('profiles').select('username').eq('user_id', g.creatorId).maybeSingle(),
         isGroupMember(g.id),
+        supabase.auth.getSession(),
       ]);
       if (!active) return;
       setCreatorName(((prof as any)?.username as string | null) ?? 'ismeretlen');
       setMember(m);
+      setUid(sessionData.session?.user?.id ?? null);
     })();
     return () => { active = false; };
   }, [name]);
 
-  const groupPosts = useMemo(
-    () => (group ? (posts ?? []).filter((p) => p.groupId === group.id)
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt)) : []),
-    [posts, group],
-  );
+  const isOwner = !!uid && !!group && uid === group.creatorId;
+
+  const groupPosts = useMemo(() => {
+    if (!group) return [];
+    const list = (posts ?? [])
+      .filter((p) => p.groupId === group.id)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    // A kitűzött téma mindenkinek elöl áll.
+    if (pinnedId) {
+      const idx = list.findIndex((p) => p.id === pinnedId);
+      if (idx > 0) {
+        const [p] = list.splice(idx, 1);
+        list.unshift(p);
+      }
+    }
+    return list;
+  }, [posts, group, pinnedId]);
   const totalVotes = groupPosts.reduce((s, p) => s + p.yesVotes + p.noVotes + p.neutralVotes, 0);
   const [members, setMembers] = useState<number | null>(null);
   useEffect(() => { if (group) setMembers(group.members); }, [group]);
@@ -70,6 +96,42 @@ export function GroupView({ name }: { name: string }) {
       setJoinMsg({ text: 'Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra.' });
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function saveDescription() {
+    if (savingDesc || !group) return;
+    setSavingDesc(true);
+    setModMsg(null);
+    try {
+      const res = await updateGroupDescription(group.id, draftDesc);
+      if (res.ok) {
+        setGroup({ ...group, description: draftDesc.trim() || null });
+        setEditOpen(false);
+        setModMsg('Leírás mentve. ✓');
+      } else {
+        setModMsg(res.error ?? 'A mentés nem sikerült.');
+      }
+    } catch {
+      setModMsg('Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra.');
+    } finally {
+      setSavingDesc(false);
+    }
+  }
+
+  async function togglePin(postId: number) {
+    if (pinBusy || !group) return;
+    setPinBusy(true);
+    setModMsg(null);
+    try {
+      const next = pinnedId === postId ? null : postId;
+      const res = await setGroupPinnedPost(group.id, next);
+      if (res.ok) setPinnedId(next);
+      else setModMsg(res.error ?? 'A kitűzés nem sikerült.');
+    } catch {
+      setModMsg('Váratlan hiba — ellenőrizd a netkapcsolatot, és próbáld újra.');
+    } finally {
+      setPinBusy(false);
     }
   }
 
@@ -172,9 +234,49 @@ export function GroupView({ name }: { name: string }) {
                 {member ? 'Tag vagy' : 'Csatlakozom'}
               </button>
             </div>
-            {group.description && (
+            {!editOpen && group.description && (
               <p className="mt-3 text-sm leading-relaxed text-fg-soft">{group.description}</p>
             )}
+
+            {/* Gazda-eszköz: a leírás szerkesztése (csak a létrehozónak) */}
+            {isOwner && !editOpen && (
+              <button
+                onClick={() => { setDraftDesc(group.description ?? ''); setEditOpen(true); setModMsg(null); }}
+                className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-hover hover:text-fg-soft"
+              >
+                <Pencil size={12} />
+                Leírás szerkesztése
+              </button>
+            )}
+            {isOwner && editOpen && (
+              <div className="mt-3">
+                <textarea
+                  value={draftDesc}
+                  onChange={(e) => setDraftDesc(e.target.value.slice(0, 500))}
+                  rows={3}
+                  placeholder="Miről szól ez a csoport?"
+                  className="w-full rounded-xl border border-line bg-bg-elevated px-3 py-2.5 text-sm text-fg placeholder:text-muted focus:border-accent/40 focus:outline-none focus:ring-2 focus:ring-accent/20"
+                />
+                <div className="mt-2 flex gap-2">
+                  <button
+                    onClick={() => void saveDescription()}
+                    disabled={savingDesc}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-accent-strong px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-accent disabled:opacity-60"
+                  >
+                    {savingDesc && <Loader2 size={12} className="animate-spin" />}
+                    Mentés
+                  </button>
+                  <button
+                    onClick={() => setEditOpen(false)}
+                    className="rounded-lg border border-line px-3.5 py-2 text-xs font-medium text-fg-soft transition-colors hover:bg-hover"
+                  >
+                    Mégse
+                  </button>
+                </div>
+              </div>
+            )}
+            {modMsg && <p className="mt-2 text-xs text-accent-soft">{modMsg}</p>}
+
             {joinMsg && (
               <p className="mt-2.5 text-xs text-accent-soft">
                 {joinMsg.text}{' '}
@@ -210,7 +312,25 @@ export function GroupView({ name }: { name: string }) {
             ) : (
               <div className="space-y-3">
                 {groupPosts.map((p) => (
-                  <PostCompactCard key={p.id} post={p} />
+                  <div key={p.id}>
+                    {pinnedId === p.id && (
+                      <p className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-accent-strong/15 px-2.5 py-1 text-xs font-semibold text-accent-soft">
+                        <Pin size={11} />
+                        Kitűzött téma
+                      </p>
+                    )}
+                    <PostCompactCard post={p} />
+                    {isOwner && (
+                      <button
+                        onClick={() => void togglePin(p.id)}
+                        disabled={pinBusy}
+                        className="mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:bg-hover hover:text-fg-soft disabled:opacity-60"
+                      >
+                        <Pin size={11} className={pinnedId === p.id ? 'text-accent-soft' : ''} />
+                        {pinnedId === p.id ? 'Kitűzés levétele' : 'Kitűzés a csoport tetejére'}
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
