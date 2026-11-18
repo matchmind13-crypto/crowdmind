@@ -10,16 +10,24 @@ import { deleteOwnComment, addComment } from '@/lib/postsDb';
 import { setCommentVote } from '@/lib/commentLikes';
 import { fetchContributionCounts } from '@/lib/credibility';
 import { formatCount } from '@/lib/utils';
+import { SITE_URL } from '@/lib/publicConfig';
 import type { FeedComment } from '@/data/types';
+
+export type CommentSort = 'legjobb' | 'legvitatottabb' | 'legujabb' | 'legregebbi';
+
+/** Ennél mélyebb szinten már nem húzódik beljebb a szál (mobilon elfogyna a hely). */
+const MAX_INDENT = 3;
 
 export function CommentList({
   comments,
   postId,
+  sort = 'legjobb',
   onDeleted,
   onReplied,
 }: {
   comments: FeedComment[];
   postId: number;
+  sort?: CommentSort;
   onDeleted?: (id: number) => void;
   onReplied?: () => void;
 }) {
@@ -43,41 +51,43 @@ export function CommentList({
     return () => { active = false; };
   }, [comments]);
 
-  // Szálazás: a fő hozzászólások pontszám (lájk − dislike) szerint csökkenő sorrendben,
-  // a válaszok a GYÖKÉR-szál alatt, időrendben (beszélgetés-sorrend). A válaszra adott
-  // válasz is ugyanabba a szálba kerül, és jelöljük, kinek szól (mint a Facebookon).
-  const threads = useMemo(() => {
+  // Valódi fa-szálazás: minden válasz a SAJÁT szülője alatt jelenik meg, tetszőleges
+  // mélységben (a parent_id láncot követve). A fő hozzászólások a választott rendezés
+  // szerint sorakoznak, a válaszok mindig időrendben (beszélgetés-sorrend).
+  const tree = useMemo(() => {
     const byId = new Map(comments.map((c) => [c.id, c]));
-    const rootOf = (c: FeedComment): number => {
-      let cur = c;
-      const seen = new Set<number>();
-      while (cur.parentId && byId.has(cur.parentId) && !seen.has(cur.id)) {
-        seen.add(cur.id);
-        cur = byId.get(cur.parentId)!;
-      }
-      return cur.id;
-    };
-    const score = (c: FeedComment) => (c.likes ?? 0) - (c.dislikes ?? 0);
-    const topLevel = comments
-      .filter((c) => !c.parentId || !byId.has(c.parentId))
-      .sort((a, b) => score(b) - score(a));
-    const replies = new Map<number, FeedComment[]>();
-    const replyToName = new Map<number, string>();
-    comments
-      .filter((c) => c.parentId && byId.has(c.parentId))
-      .forEach((c) => {
-        const root = rootOf(c);
-        const list = replies.get(root) ?? [];
+    const children = new Map<number, FeedComment[]>();
+    const roots: FeedComment[] = [];
+    comments.forEach((c) => {
+      if (c.parentId && byId.has(c.parentId)) {
+        const list = children.get(c.parentId) ?? [];
         list.push(c);
-        replies.set(root, list);
-        // Ha nem közvetlenül a fő hozzászólásra válaszol, mutatjuk, kinek szól.
-        if (c.parentId !== root) {
-          replyToName.set(c.id, byId.get(c.parentId!)!.username);
-        }
-      });
-    replies.forEach((list) => list.sort((a, b) => a.id - b.id));
-    return { topLevel, replies, replyToName };
-  }, [comments]);
+        children.set(c.parentId, list);
+      } else {
+        roots.push(c);
+      }
+    });
+    children.forEach((list) => list.sort((a, b) => a.id - b.id));
+
+    const score = (c: FeedComment) => (c.likes ?? 0) - (c.dislikes ?? 0);
+    const volume = (c: FeedComment) => (c.likes ?? 0) + (c.dislikes ?? 0);
+    if (sort === 'legjobb') {
+      roots.sort((a, b) => score(b) - score(a) || a.id - b.id);
+    } else if (sort === 'legvitatottabb') {
+      // Vitatott = sok szavazat MINDKÉT irányban: a kisebbik oldal nagysága dönt.
+      roots.sort(
+        (a, b) =>
+          Math.min(b.likes ?? 0, b.dislikes ?? 0) - Math.min(a.likes ?? 0, a.dislikes ?? 0) ||
+          volume(b) - volume(a) ||
+          a.id - b.id,
+      );
+    } else if (sort === 'legujabb') {
+      roots.sort((a, b) => b.id - a.id);
+    } else {
+      roots.sort((a, b) => a.id - b.id);
+    }
+    return { roots, children, byId };
+  }, [comments, sort]);
 
   if (comments.length === 0) {
     return (
@@ -88,34 +98,117 @@ export function CommentList({
   }
   return (
     <div className="mt-4 space-y-3">
-      {threads.topLevel.map((c) => (
-        <div key={c.id}>
-          <CommentRow
-            comment={c}
-            postId={postId}
-            isOwn={!!uid && c.userId === uid}
-            contributions={c.userId ? (contribs.get(c.userId) ?? null) : null}
-            onDeleted={onDeleted}
-            onReplied={onReplied}
-          />
-          {(threads.replies.get(c.id) ?? []).length > 0 && (
-            <div className="ml-5 mt-2 space-y-2 border-l-2 border-line pl-3 sm:ml-8">
-              {(threads.replies.get(c.id) ?? []).map((r) => (
-                <CommentRow
+      {tree.roots.map((c) => (
+        <ThreadNode
+          key={c.id}
+          comment={c}
+          depth={0}
+          kidsOf={tree.children}
+          byId={tree.byId}
+          postId={postId}
+          uid={uid}
+          contribs={contribs}
+          onDeleted={onDeleted}
+          onReplied={onReplied}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** Egy hozzászólás + a teljes alatta lévő szál, rekurzívan, összecsukási lehetőséggel. */
+function ThreadNode({
+  comment,
+  depth,
+  kidsOf,
+  byId,
+  postId,
+  uid,
+  contribs,
+  onDeleted,
+  onReplied,
+}: {
+  comment: FeedComment;
+  depth: number;
+  kidsOf: Map<number, FeedComment[]>;
+  byId: Map<number, FeedComment>;
+  postId: number;
+  uid: string | null;
+  contribs: Map<string, number>;
+  onDeleted?: (id: number) => void;
+  onReplied?: () => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const kids = kidsOf.get(comment.id) ?? [];
+
+  // A teljes al-szál mérete (nem csak a közvetlen válaszok) az összecsukó gombhoz.
+  const subtreeCount = useMemo(() => {
+    let n = 0;
+    const stack = [...kids];
+    const seen = new Set<number>();
+    while (stack.length > 0) {
+      const c = stack.pop()!;
+      if (seen.has(c.id)) continue;
+      seen.add(c.id);
+      n += 1;
+      (kidsOf.get(c.id) ?? []).forEach((k) => stack.push(k));
+    }
+    return n;
+  }, [kids, kidsOf]);
+
+  // A megengedett mélység felett nem húzódik beljebb a szál — ott chip mutatja, kinek szól.
+  const indentMore = depth < MAX_INDENT;
+  const parentName =
+    depth > 0 && !indentMore && comment.parentId ? (byId.get(comment.parentId)?.username ?? null) : null;
+
+  return (
+    <div>
+      <CommentRow
+        comment={comment}
+        postId={postId}
+        isOwn={!!uid && comment.userId === uid}
+        contributions={comment.userId ? (contribs.get(comment.userId) ?? null) : null}
+        replyToName={parentName}
+        onDeleted={onDeleted}
+        onReplied={onReplied}
+      />
+      {kids.length > 0 && (
+        <>
+          <button
+            onClick={() => setOpen((o) => !o)}
+            className="ml-5 mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:bg-hover hover:text-fg-soft sm:ml-8"
+          >
+            <CornerDownRight size={12} className="text-accent-soft" />
+            {open
+              ? `${subtreeCount} válasz elrejtése`
+              : `${subtreeCount} válasz mutatása`}
+          </button>
+          {open && (
+            <div
+              className={
+                indentMore
+                  ? 'ml-5 mt-2 space-y-2 border-l-2 border-line pl-3 sm:ml-8'
+                  : 'mt-2 space-y-2'
+              }
+            >
+              {kids.map((r) => (
+                <ThreadNode
                   key={r.id}
                   comment={r}
+                  depth={depth + 1}
+                  kidsOf={kidsOf}
+                  byId={byId}
                   postId={postId}
-                  isOwn={!!uid && r.userId === uid}
-                  contributions={r.userId ? (contribs.get(r.userId) ?? null) : null}
-                  replyToName={threads.replyToName.get(r.id) ?? null}
+                  uid={uid}
+                  contribs={contribs}
                   onDeleted={onDeleted}
                   onReplied={onReplied}
                 />
               ))}
             </div>
           )}
-        </div>
-      ))}
+        </>
+      )}
     </div>
   );
 }
@@ -170,6 +263,17 @@ function CommentRow({
   const [replyText, setReplyText] = useState('');
   const [replying, setReplying] = useState(false);
   const [replyError, setReplyError] = useState<{ msg: string; needsLogin?: boolean } | null>(null);
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
+
+  async function handleShare() {
+    try {
+      await navigator.clipboard.writeText(`${SITE_URL}/post/${postId}`);
+      setShareMsg('Link másolva!');
+    } catch {
+      setShareMsg('A másolás nem sikerült.');
+    }
+    setTimeout(() => setShareMsg(null), 3000);
+  }
 
   async function sendReply() {
     if (!replyText.trim() || replying) return;
@@ -279,13 +383,17 @@ function CommentRow({
           <MessageCircle size={14} />
           Válasz
         </button>
-        <button className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors hover:bg-hover hover:text-fg-soft">
-          <Share2 size={14} />
+        <button
+          onClick={() => void handleShare()}
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors hover:bg-hover hover:text-fg-soft"
+        >
+          {shareMsg === 'Link másolva!' ? <Check size={14} className="text-positive" /> : <Share2 size={14} />}
           Megosztás
         </button>
         {!isOwn && <ReportButton targetType="comment" targetId={comment.id} variant="flag" />}
 
         {likeMsg && <span className="px-1.5 text-xs text-accent-soft">{likeMsg}</span>}
+        {shareMsg && <span className="px-1.5 text-xs text-accent-soft">{shareMsg}</span>}
 
         {/* Törlés – csak a saját hozzászólásodnál, kétlépcsős megerősítéssel */}
         {isOwn && delState === 'idle' && (

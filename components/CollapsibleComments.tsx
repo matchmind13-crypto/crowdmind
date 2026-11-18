@@ -4,12 +4,18 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessagesSquare, ChevronDown, ImageIcon, Video, Smile, User as UserIcon, Loader2 } from 'lucide-react';
 import { SortDropdown } from './SortDropdown';
-import { CommentList } from './CommentList';
+import { CommentList, type CommentSort } from './CommentList';
 import { fetchComments, addComment } from '@/lib/postsDb';
 import { useMyAvatar } from '@/lib/useMyAvatar';
 import type { FeedComment } from '@/data/types';
 
-const SORT_OPTIONS = ['Legújabb', 'Legrégebbi'];
+const SORT_OPTIONS = ['Legjobb', 'Legvitatottabb', 'Legújabb', 'Legrégebbi'];
+const SORT_KEYS: Record<string, CommentSort> = {
+  Legjobb: 'legjobb',
+  Legvitatottabb: 'legvitatottabb',
+  Legújabb: 'legujabb',
+  Legrégebbi: 'legregebbi',
+};
 
 export function CollapsibleComments({
   postId,
@@ -71,9 +77,7 @@ export function CollapsibleComments({
     setPosting(false);
   }
 
-  const sorted = comments
-    ? sort === 'Legrégebbi' ? [...comments].reverse() : comments
-    : null;
+  const sortKey: CommentSort = SORT_KEYS[sort] ?? 'legjobb';
 
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-line panel-gradient">
@@ -151,15 +155,16 @@ export function CollapsibleComments({
 
               {loadError && <p className="mt-3 text-sm text-negative">{loadError}</p>}
 
-              {sorted === null ? (
+              {comments === null ? (
                 <div className="mt-4 space-y-3">
                   <div className="h-20 animate-pulse rounded-xl bg-card-2/60" />
                   <div className="h-20 animate-pulse rounded-xl bg-card-2/60" />
                 </div>
               ) : (
                 <CommentList
-                  comments={sorted}
+                  comments={comments}
                   postId={postId}
+                  sort={sortKey}
                   onDeleted={() => { setAdded((a) => a - 1); void load(); }}
                   onReplied={() => { setAdded((a) => a + 1); void load(); }}
                 />
