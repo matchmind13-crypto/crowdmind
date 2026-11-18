@@ -1,9 +1,9 @@
 'use client';
 import { useState } from 'react';
-import Link from 'next/link';
 import { ThumbsUp, ThumbsDown, Minus, ChartLine, ChevronDown } from 'lucide-react';
 import { castVote } from '@/lib/postsDb';
 import { OpinionTimeline } from './OpinionTimeline';
+import { AuthModal } from './AuthModal';
 import { formatCount } from '@/lib/utils';
 
 /**
@@ -32,6 +32,9 @@ export function CommunitySnapshot({
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; needsLogin?: boolean } | null>(null);
   const [timelineOpen, setTimelineOpen] = useState(false);
+  // Beágyazott belépés/regisztráció: a szavazat szándéka megmarad, és siker után magától leadódik.
+  const [authOpen, setAuthOpen] = useState(false);
+  const [pendingVote, setPendingVote] = useState<'yes' | 'no' | 'neutral' | null>(null);
 
   const total = yes + no + neutral;
   const forPct = total > 0 ? Math.round((yes / total) * 100) : 0;
@@ -64,7 +67,11 @@ export function CommunitySnapshot({
       } else if (res.already) {
         setMsg({ text: 'Erre a posztra már szavaztál.' });
       } else if (res.needsLogin) {
-        setMsg({ text: 'A szavazáshoz jelentkezz be.', needsLogin: true });
+        // Nem dobjuk át külön oldalra: helyben nyílik a belépés/regisztráció,
+        // és siker után a megjegyzett szavazat magától leadódik.
+        setPendingVote(v);
+        setAuthOpen(true);
+        setMsg({ text: 'A szavazáshoz lépj be vagy regisztrálj.', needsLogin: true });
       } else {
         setMsg({ text: res.error ?? 'Hiba a szavazáskor.' });
       }
@@ -138,12 +145,30 @@ export function CommunitySnapshot({
         <p className="mt-2 text-center text-xs text-fg-soft">
           {msg.text}{' '}
           {msg.needsLogin && (
-            <Link href="/login" className="font-semibold text-accent-soft underline">
-              Bejelentkezés
-            </Link>
+            <button
+              onClick={() => setAuthOpen(true)}
+              className="font-semibold text-accent-soft underline"
+            >
+              Belépés itt
+            </button>
           )}
         </p>
       )}
+
+      <AuthModal
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
+        onSuccess={() => {
+          setAuthOpen(false);
+          setMsg(null);
+          if (pendingVote) {
+            const v = pendingVote;
+            setPendingVote(null);
+            void vote(v);
+          }
+        }}
+        lead="Fél perc az egész — utána a szavazatod azonnal leadódik."
+      />
 
       {/* Vélemény-idővonal – lenyitásra töltődik */}
       <button
